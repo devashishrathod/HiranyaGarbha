@@ -79,6 +79,8 @@ module.exports = {
   }),
 
   DEFAULT_IMAGES: Object.freeze({
+    PRENATAL_CARE:
+      "https://res.cloudinary.com/drvdnqydw/image/upload/f_auto,q_auto/v1/Images/hrhc8iwbjl2qnnqu9kaq?_a=BAMAK+Jw0",
     CATEGORY:
       "https://res.cloudinary.com/drvdnqydw/image/upload/f_auto,q_auto/v1/Images/hrhc8iwbjl2qnnqu9kaq?_a=BAMAK+Jw0",
     SUBCATEGORY:
