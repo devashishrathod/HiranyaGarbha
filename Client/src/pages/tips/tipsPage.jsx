@@ -7,10 +7,10 @@ import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
 import { toast } from "react-hot-toast";
 import Pagination from "../../components/UI/Pagination";
-import { CategoryView } from "./CategoryView";
-import { CategoryAddEdit } from "./CategoryAddEdit";
+import { TipsView } from "./tipsView";
+import { TipsAddEdit } from "./tipsAddEdit";
 
-export const CategoryPage = () => {
+export const TipsPage = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -158,10 +158,10 @@ export const CategoryPage = () => {
     if (error?.response?.status === 404) {
       return (
         <NotFound
-          title="No Categories Found"
-          type="category"
+          title="No Tips Found"
+          type="tips"
           message={notFoundMessage}
-          actionText="Create New Category"
+          actionText="Create New Tips"
           onAction={handleAddNew}
         />
       );
@@ -225,13 +225,14 @@ export const CategoryPage = () => {
       </div>
 
       {isViewModalOpen && (
-        <CategoryView
+        <TipsView
           category={selectedCategory}
           onClose={() => setIsViewModalOpen(false)}
         />
       )}
+
       {isAddEditModalOpen && (
-        <CategoryAddEdit
+        <TipsAddEdit
           category={selectedCategory}
           onSave={handleSave}
           onClose={() => setIsAddEditModalOpen(false)}

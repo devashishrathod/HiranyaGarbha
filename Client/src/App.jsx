@@ -19,12 +19,67 @@ const LoadingFallback = () => (
 );
 
 import MainLayout from "./components/Layout/MainLayout";
-
-const Login = lazy(() => import("./pages/Login"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Profile = lazy(() => import("./pages/Profile"));
-const CategoryPage = lazy(() => import("./pages/category/categoryPage"));
-const CategoryAddEdit = lazy(() => import("./pages/category/CategoryAddEdit"));
+/* ===================== AUTH & DASHBOARD ===================== */
+const Login = lazy(() =>
+  import("./pages/Login").then((m) => ({ default: m.Login }))
+);
+const Profile = lazy(() =>
+  import("./pages/Profile").then((m) => ({ default: m.Profile }))
+);
+const Dashboard = lazy(() =>
+  import("./pages/Dashboard").then((m) => ({ default: m.AdminDashboard }))
+);
+/* ===================== TIPS ===================== */
+const TipsPage = lazy(() =>
+  import("./pages/tips/tipsPage").then((m) => ({ default: m.TipsPage }))
+);
+const TipsAddEdit = lazy(() =>
+  import("./pages/tips/tipsAddEdit").then((m) => ({
+    default: m.TipsAddEdit,
+  }))
+);
+/* ===================== USERS ===================== */
+const UserPage = lazy(() =>
+  import("./pages/users/userPage").then((m) => ({ default: m.UserPage }))
+);
+const UserAddEdit = lazy(() =>
+  import("./pages/users/userAddEdit").then((m) => ({
+    default: m.UserAddEdit,
+  }))
+);
+/* ===================== EXPERTS ===================== */
+const ExpertPage = lazy(() =>
+  import("./pages/experts/expertPage").then((m) => ({
+    default: m.ExpertPage,
+  }))
+);
+const ExpertAddEdit = lazy(() =>
+  import("./pages/experts/expertAddEdit").then((m) => ({
+    default: m.ExpertAddEdit,
+  }))
+);
+/* ===================== PRENATAL SERVICES ===================== */
+const PrenatalServicesPage = lazy(() =>
+  import("./pages/prenatalServices/prenatalServicePage").then((m) => ({
+    default: m.PrenatalServicesPage,
+  }))
+);
+const PrenatalServicesAddEdit = lazy(() =>
+  import("./pages/prenatalServices/prenatalServiceAddEdit").then((m) => ({
+    default: m.PrenatalServicesAddEdit,
+  }))
+);
+/* ===================== CATEGORY ===================== */
+const CategoryPage = lazy(() =>
+  import("./pages/category/categoryPage").then((m) => ({
+    default: m.CategoryPage,
+  }))
+);
+const CategoryAddEdit = lazy(() =>
+  import("./pages/category/CategoryAddEdit").then((m) => ({
+    default: m.CategoryAddEdit,
+  }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,20 +103,35 @@ const App = () => {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
-                {/* <Route path="/users" element={<Users />} /> */}
+                <Route path="/users" element={<UserPage />} />
+                <Route path="/users/add" element={<UserAddEdit />} />
+                <Route path="/users/update/:id" element={<UserAddEdit />} />
                 <Route path="/category" element={<CategoryPage />} />
                 <Route path="/category/add" element={<CategoryAddEdit />} />
                 <Route
                   path="/category/update/:id"
                   element={<CategoryAddEdit />}
                 />
-                {/* <Route path="/experts" element={<Experts />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/enquiries" element={<Enquiries />} />
+                <Route path="/tips" element={<TipsPage />} />
+                <Route path="/tips/add" element={<TipsAddEdit />} />
+                <Route path="/tips/update/:id" element={<TipsAddEdit />} />
+                <Route path="/experts" element={<ExpertPage />} />
+                <Route path="/experts/add" element={<ExpertAddEdit />} />
+                <Route path="/experts/update/:id" element={<ExpertAddEdit />} />
                 <Route
-                  path="/prenatal-services"
-                  element={<PrenatalServices />}
+                  path="/prenatal-cares"
+                  element={<PrenatalServicesPage />}
                 />
+                <Route
+                  path="/prenatal-cares/add"
+                  element={<PrenatalServicesAddEdit />}
+                />
+                <Route
+                  path="/prenatal-cares/update/:id"
+                  element={<PrenatalServicesAddEdit />}
+                />
+                {/* <Route path="/products" element={<Products />} />
+                <Route path="/enquiries" element={<Enquiries />} />
                 <Route path="/nutrition" element={<Nutrition />} />
                 <Route path="/gallery" element={<Gallery />} /> */}
                 {/* Default redirect to dashboard */}

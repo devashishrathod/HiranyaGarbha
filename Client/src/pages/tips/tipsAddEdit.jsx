@@ -9,7 +9,7 @@ import API_ENDPOINTS from "../../api/apiEndpoint";
 import { toast } from "react-hot-toast";
 import Loader from "../../components/UI/Loader";
 
-export const CategoryAddEdit = () => {
+export const TipsAddEdit = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const navigate = useNavigate();

@@ -51,7 +51,7 @@ const appointmentChartData = {
   ],
 };
 
-export default function AdminDashboard() {
+export function AdminDashboard() {
   const [chartFilter, setChartFilter] = useState("Weekly");
   const [tableFilter, setTableFilter] = useState("Today");
 

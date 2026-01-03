@@ -6,7 +6,7 @@ import { usePutMutation } from "../api/apiCall";
 import useAuth from "../hooks/useAuth";
 import { updateProfile } from "../store/auth/authSlice";
 
-const ProfilePage = () => {
+export const Profile = () => {
   const { user } = useAuth();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -380,5 +380,3 @@ const ProfilePage = () => {
     </div>
   );
 };
-
-export default ProfilePage;
