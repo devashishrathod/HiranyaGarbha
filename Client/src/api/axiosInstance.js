@@ -1,47 +1,28 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/hiranyagarbha";
-//const baseURL = "https://hiranyagarbha.onrender.com/hiranyagarbha";
+const baseURL =
+  import.meta.env.MODE === "production"
+    ? import.meta.env.VITE_PROD_BACKEND_URL
+    : import.meta.env.VITE_LOCAL_BACKEND_URL;
 
-// const axiosInstance = axios.create({
-//   baseURL,
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-// });
-const axiosInstance = axios.create({
-  baseURL,
-});
-// JSON header sirf tab lagao jab FormData NA ho
+const axiosInstance = axios.create({ baseURL });
+
 axiosInstance.interceptors.request.use((config) => {
   if (config.data instanceof FormData) {
-    delete config.headers["Content-Type"]; // 👈 MOST IMPORTANT
-  } else {
-    config.headers["Content-Type"] = "application/json";
-  }
+    delete config.headers["Content-Type"];
+  } else config.headers["Content-Type"] = "application/json";
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Request interceptor to add token to requests
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor to handle token expiration
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.clear();
+      // localStorage.removeItem("token");
+      // localStorage.removeItem("user");
       window.location.href = "/login";
     }
     return Promise.reject(error);
