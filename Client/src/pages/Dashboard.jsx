@@ -1,602 +1,307 @@
-import React, { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
-  Calendar,
   Users,
+  Calendar,
   IndianRupee,
-  TrendingUp,
-  Activity,
-  ShoppingCart,
-  TestTube,
-  Clipboard,
-  ArrowUp,
-  ArrowDown,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  UserCheck,
-  Microscope,
-  Stethoscope,
-  Building,
-  FlaskConical,
-  Heart,
+  Package,
+  HeartPulse,
+  Image,
+  PhoneCall,
+  ClipboardList,
 } from "lucide-react";
 import {
+  LineChart,
+  Line,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
+  CartesianGrid,
   ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  RadialBarChart,
-  RadialBar,
-  ComposedChart,
 } from "recharts";
-import { useGetQuery } from "../api/apiCall";
-import API_ENDPOINTS from "../api/apiEndpoint";
 
-// Consistent blue-purple theme
-const COLORS = {
-  primary: "#3B82F6",
-  secondary: "#8B5CF6",
-  accent: "#6366F1",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-  success: "#10B981",
-  teal: "#14B8A6",
-  pink: "#EC4899",
+/* ================= FILTER OPTIONS ================= */
+const FILTERS = [
+  "Today",
+  "Yesterday",
+  "Weekly",
+  "Monthly",
+  "Last 3 Months",
+  "Quarterly",
+  "Half Year",
+  "Annual",
+];
+
+/* ================= MOCK DATA (API READY) ================= */
+const appointmentChartData = {
+  Weekly: [
+    { name: "Mon", value: 12 },
+    { name: "Tue", value: 18 },
+    { name: "Wed", value: 10 },
+    { name: "Thu", value: 22 },
+    { name: "Fri", value: 17 },
+    { name: "Sat", value: 25 },
+  ],
+  Monthly: [
+    { name: "W1", value: 12000 },
+    { name: "W2", value: 18500 },
+    { name: "W3", value: 14200 },
+    { name: "W4", value: 21000 },
+  ],
 };
 
-// Modern 2025 Stat Card Component
-const StatCard = ({
-  icon: Icon,
-  title,
-  value,
-  trend,
-  trendType = "positive",
-}) => (
-  <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 p-6 relative overflow-hidden transform hover:scale-105 group">
-    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-    <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/5 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
-    <div className="relative z-10">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        {trend && (
-          <div className="flex items-center text-white bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
-            {trendType === "positive" ? (
-              <ArrowUp className="w-4 h-4" />
-            ) : (
-              <ArrowDown className="w-4 h-4" />
-            )}
-            <span className="ml-1 text-sm font-medium">{trend}%</span>
-          </div>
-        )}
-      </div>
-      <div>
-        <p className="text-sm text-white/80 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-white">{value}</h3>
-      </div>
-    </div>
-  </div>
-);
+export default function AdminDashboard() {
+  const [chartFilter, setChartFilter] = useState("Weekly");
+  const [tableFilter, setTableFilter] = useState("Today");
 
-// Modern Radial Chart for Appointment Status
-const AppointmentStatusChart = ({ statusCounts }) => {
-  const totalAppointments = statusCounts.reduce(
-    (sum, status) => sum + status.count,
-    0
+  const chartData = useMemo(
+    () => appointmentChartData[chartFilter] || [],
+    [chartFilter]
   );
 
-  const radialData = statusCounts.map((status, index) => ({
-    name: status._id,
-    value: status.count,
-    percentage: ((status.count / totalAppointments) * 100).toFixed(1),
-    fill:
-      status._id === "confirmed"
-        ? "#10B981"
-        : status._id === "pending"
-        ? "#F59E0B"
-        : "#EF4444",
-  }));
-
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center mb-6">
-        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg mr-3">
-          <Activity className="w-6 h-6 text-white" />
-        </div>
-        <h3 className="text-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Appointment Status
-        </h3>
+    <div className="min-h-screen bg-gradient-to-br from-[#fff1f5] via-[#f5e9ff] to-white p-6">
+      {/* HEADER */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-purple-800">
+          Hiranyagarbha Admin Dashboard
+        </h1>
+        <p className="text-sm text-gray-600">
+          Complete Business Overview & Reports
+        </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <RadialBarChart
-          cx="50%"
-          cy="50%"
-          innerRadius="20%"
-          outerRadius="80%"
-          data={radialData}
+      {/* KPI SECTION */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <Kpi title="Today's Appointments" value="14" icon={<Calendar />} />
+        <Kpi title="Today's Sales" value="₹8,450" icon={<IndianRupee />} />
+        <Kpi title="Active Sessions" value="9" icon={<HeartPulse />} />
+        <Kpi title="Total Products" value="58" icon={<Package />} />
+        <Kpi title="Registered Users" value="1,248" icon={<Users />} />
+        <Kpi title="Gallery Items" value="186" icon={<Image />} />
+        <Kpi title="Contact Requests" value="24" icon={<PhoneCall />} />
+      </div>
+
+      {/* CHARTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <Card
+          title="Appointment Reports"
+          filter={chartFilter}
+          onChange={setChartFilter}
         >
-          <RadialBar
-            minAngle={15}
-            label={{ position: "insideStart", fill: "#fff", fontSize: 12 }}
-            background
-            clockWise
-            dataKey="value"
-          />
-          <Legend
-            iconSize={12}
-            layout="horizontal"
-            verticalAlign="bottom"
-            align="center"
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgba(255,255,255,0.95)",
-              borderRadius: "12px",
-              border: "none",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            }}
-            formatter={(value, name) => [
-              `${value} (${
-                radialData.find((d) => d.name === name)?.percentage
-              }%)`,
-              name,
+          <ChartFix>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line dataKey="value" stroke="#7c3aed" strokeWidth={3} />
+            </LineChart>
+          </ChartFix>
+        </Card>
+
+        <Card
+          title="Product Sales"
+          filter={chartFilter}
+          onChange={setChartFilter}
+        >
+          <ChartFix>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartFix>
+        </Card>
+      </div>
+
+      {/* TABLES ROW 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <TableCard
+          title="Today's Appointments"
+          filter={tableFilter}
+          onChange={setTableFilter}
+        >
+          <SimpleTable
+            headers={["Client", "Service", "Time", "Status"]}
+            rows={[
+              ["Anita Sharma", "Prenatal Care", "10:30 AM", "Confirmed"],
+              ["Neha Verma", "Nutrition Plan", "12:00 PM", "Pending"],
+              ["Pooja Patel", "Yoga Session", "4:00 PM", "Confirmed"],
             ]}
           />
-        </RadialBarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+        </TableCard>
 
-// Modern Composed Chart for Sales Performance
-const SalesChart = ({ selles }) => {
-  const chartData = selles.map((sale) => ({
-    name: sale.title,
-    revenue: sale.totalRevenue,
-    quantity: sale.totalQuantitySold,
-    efficiency: Math.floor(Math.random() * 30) + 70, // Mock efficiency data
-  }));
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center mb-6">
-        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg mr-3">
-          <TrendingUp className="w-6 h-6 text-white" />
-        </div>
-        <h3 className="text-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Sales Performance
-        </h3>
+        <TableCard
+          title="Today's Product Sales"
+          filter={tableFilter}
+          onChange={setTableFilter}
+        >
+          <SimpleTable
+            headers={["Product", "Category", "Qty", "Amount"]}
+            rows={[
+              ["Diet Guide", "Nutrition", "2", "₹1,200"],
+              ["Meditation Pack", "Wellness", "1", "₹499"],
+              ["Prenatal Kit", "Parental", "1", "₹2,999"],
+            ]}
+          />
+        </TableCard>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgba(255,255,255,0.95)",
-              borderRadius: "12px",
-              border: "none",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            }}
+      {/* TABLES ROW 2 (🔥 NEW) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <TableCard
+          title="Wellness / Mindfulness Sessions"
+          filter={tableFilter}
+          onChange={setTableFilter}
+        >
+          <SimpleTable
+            headers={["Session", "Expert", "Date", "Status"]}
+            rows={[
+              ["Pregnancy Yoga", "Dr. Meera", "Today", "Live"],
+              ["Breathing Workshop", "Aarav Jain", "Tomorrow", "Scheduled"],
+              ["Meditation", "Anjali Desai", "Yesterday", "Completed"],
+            ]}
           />
-          <Legend />
-          <Bar
-            yAxisId="left"
-            dataKey="revenue"
-            fill="url(#blueGradient)"
-            name="Revenue"
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar
-            yAxisId="left"
-            dataKey="quantity"
-            fill="url(#purpleGradient)"
-            name="Quantity"
-            radius={[4, 4, 0, 0]}
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="efficiency"
-            stroke="#EC4899"
-            strokeWidth={3}
-            name="Efficiency %"
-          />
-          <defs>
-            <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.3} />
-            </linearGradient>
-            <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+        </TableCard>
 
-// Lab Performance Area Chart
-const LabPerformanceChart = ({ today }) => {
-  // Mock lab performance data
-  const labData = [
-    { name: "Blood Test", completed: 45, pending: 12, efficiency: 78 },
-    { name: "Urine Test", completed: 32, pending: 8, efficiency: 80 },
-    { name: "X-Ray", completed: 28, pending: 15, efficiency: 65 },
-    { name: "MRI", completed: 12, pending: 5, efficiency: 70 },
-    { name: "CT Scan", completed: 18, pending: 7, efficiency: 72 },
-    { name: "ECG", completed: 55, pending: 10, efficiency: 85 },
-  ];
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center mb-6">
-        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg mr-3">
-          <Microscope className="w-6 h-6 text-white" />
-        </div>
-        <h3 className="text-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Lab Performance
-        </h3>
+        <TableCard
+          title="Contact Requests"
+          filter={tableFilter}
+          onChange={setTableFilter}
+        >
+          <SimpleTable
+            headers={["Name", "Mobile", "Subject", "Status"]}
+            rows={[
+              ["Ritika", "98XXXX321", "Session Inquiry", "New"],
+              ["Amit", "97XXXX654", "Product Info", "Replied"],
+              ["Sneha", "99XXXX112", "Appointment", "Pending"],
+            ]}
+          />
+        </TableCard>
       </div>
-
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={labData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgba(255,255,255,0.95)",
-              borderRadius: "12px",
-              border: "none",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            }}
-          />
-          <Legend />
-          <Area
-            type="monotone"
-            dataKey="completed"
-            stackId="1"
-            stroke="#10B981"
-            fill="url(#greenGradient)"
-            name="Completed"
-          />
-          <Area
-            type="monotone"
-            dataKey="pending"
-            stackId="1"
-            stroke="#F59E0B"
-            fill="url(#orangeGradient)"
-            name="Pending"
-          />
-          <defs>
-            <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#10B981" stopOpacity={0.2} />
-            </linearGradient>
-            <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.2} />
-            </linearGradient>
-          </defs>
-        </AreaChart>
-      </ResponsiveContainer>
     </div>
   );
-};
+}
 
-// Today's Comprehensive Stats Component
-const TodayStats = ({
-  statusCounts,
-  today,
-  todaysAppointments,
-  todaySells,
-  todayRevenue,
-  totalSells,
-}) => {
-  // Real API data with some calculated values
-  const todayData = {
-    doctors: 12, // You can add this to your API later
-    activePatients: todaysAppointments?.length || 0,
-    labTests: today?.totalTests || 0,
-    revenue: today?.totalRevenue || 0,
-    todayRevenue: todayRevenue || 0,
-    todaySells: todaySells || 0,
-    totalSells: totalSells || 0,
-    emergencies: 3, // You can add this to your API later
-    surgeries: 5, // You can add this to your API later
-  };
+/* ================= COMPONENTS ================= */
 
-  const todayAppointments = statusCounts.map((status) => ({
-    status: status._id,
-    count: status.count,
-    icon:
-      status._id === "confirmed"
-        ? CheckCircle
-        : status._id === "pending"
-        ? Clock
-        : XCircle,
-    color:
-      status._id === "confirmed"
-        ? "text-green-500"
-        : status._id === "pending"
-        ? "text-yellow-500"
-        : "text-red-500",
-    bgColor:
-      status._id === "confirmed"
-        ? "bg-green-50"
-        : status._id === "pending"
-        ? "bg-yellow-50"
-        : "bg-red-50",
-  }));
-
+function Kpi({ title, value, icon }) {
   return (
-    <div className="space-y-6">
-      {/* Today's Appointments */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Today's Appointments
-        </h3>
+    <div className="relative overflow-hidden rounded-2xl p-6 shadow-xl bg-gradient-to-br from-purple-600 via-pink-500 to-rose-400 text-white">
+      <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-white/10 rounded-full" />
+      <div className="flex justify-between items-center relative z-10">
+        <div>
+          <p className="text-sm opacity-90">{title}</p>
+          <h3 className="text-3xl font-bold mt-1">{value}</h3>
+        </div>
+        <div className="bg-white/20 p-3 rounded-xl">{icon}</div>
+      </div>
+    </div>
+  );
+}
+function Card({ title, filter, onChange, children }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-purple-100 hover:shadow-xl transition">
+      <Header title={title} filter={filter} onChange={onChange} />
+      {children}
+    </div>
+  );
+}
 
-        <div className="space-y-3">
-          {todayAppointments.map((appointment, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between p-4 ${appointment.bgColor} rounded-lg border border-opacity-20`}
-            >
-              <div className="flex items-center">
-                <appointment.icon
-                  className={`w-5 h-5 ${appointment.color} mr-3`}
-                />
-                <span className="font-medium text-gray-700 capitalize">
-                  {appointment.status}
-                </span>
-              </div>
-              <span className="text-2xl font-bold text-gray-800">
-                {appointment.count}
-              </span>
-            </div>
+function TableCard({ title, filter, onChange, children }) {
+  return (
+    <div className="bg-white rounded-2xl shadow p-6 border border-purple-100">
+      <Header title={title} filter={filter} onChange={onChange} showViewAll />
+      {children}
+    </div>
+  );
+}
+
+function Header({ title, filter, onChange, showViewAll }) {
+  return (
+    <div className="flex justify-between items-center mb-5">
+      <h2 className="font-semibold text-purple-800 text-lg">{title}</h2>
+      <div className="flex gap-3">
+        <select
+          value={filter}
+          onChange={(e) => onChange(e.target.value)}
+          className="rounded-lg border border-purple-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+        >
+          {FILTERS.map((f) => (
+            <option key={f}>{f}</option>
           ))}
-        </div>
-
-        {/* Show today's appointments count */}
-        <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Calendar className="w-5 h-5 text-indigo-600 mr-3" />
-              <span className="font-medium text-indigo-700">
-                Today's Appointments
-              </span>
-            </div>
-            <span className="text-2xl font-bold text-indigo-800">
-              {todayData.activePatients}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Today's Lab & Medical Stats */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Today's Lab & Medical
-        </h3>
-
-        <div className="grid grid-cols-1 gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <TestTube className="w-6 h-6" />
-              <div className="text-right">
-                <p className="text-sm opacity-80">Lab Tests</p>
-                <p className="text-2xl font-bold">{todayData.labTests}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <Stethoscope className="w-6 h-6" />
-              <div className="text-right">
-                <p className="text-sm opacity-80">Active Doctors</p>
-                <p className="text-2xl font-bold">{todayData.doctors}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <UserCheck className="w-6 h-6" />
-              <div className="text-right">
-                <p className="text-sm opacity-80">Active Patients</p>
-                <p className="text-2xl font-bold">{todayData.activePatients}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <IndianRupee className="w-6 h-6" />
-              <div className="text-right">
-                <p className="text-sm opacity-80">Today's Revenue</p>
-                <p className="text-2xl font-bold">
-                  ₹{todayData.todayRevenue.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-            <div className="flex items-center justify-between">
-              <ShoppingCart className="w-6 h-6" />
-              <div className="text-right">
-                <p className="text-sm opacity-80">Today's Sales</p>
-                <p className="text-2xl font-bold">{todayData.todaySells}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Emergency & Surgery Stats */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-          Critical Operations
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-red-50 rounded-lg p-4 text-center border border-red-200">
-            <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <p className="text-sm text-red-600 mb-1">Emergencies</p>
-            <p className="text-2xl font-bold text-red-700">
-              {todayData.emergencies}
-            </p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
-            <Building className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <p className="text-sm text-blue-600 mb-1">Surgeries</p>
-            <p className="text-2xl font-bold text-blue-700">
-              {todayData.surgeries}
-            </p>
-          </div>
-        </div>
+        </select>
+        {showViewAll && (
+          <button className="text-sm font-medium text-purple-600 hover:text-pink-500 transition">
+            View All →
+          </button>
+        )}
       </div>
     </div>
   );
-};
+}
 
-const DashboardPage = () => {
-  // State for dashboard data
-  const [dashboardData, setDashboardData] = useState(null);
-  // API Query
-  const {
-    data: apiData,
-    isLoading,
-    error,
-  } = useGetQuery(`${API_ENDPOINTS.DASHBOARD.GET_DASHBOARD}`);
-  // Update dashboard data when API response changes
-  useEffect(() => {
-    if (apiData && apiData.success) {
-      setDashboardData(apiData);
-    }
-  }, [apiData]);
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4"></div>
-            <div className="absolute inset-0 rounded-full h-20 w-20 border-4 border-transparent border-r-purple-400 animate-ping mx-auto"></div>
-          </div>
-          <p className="text-xl bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent font-semibold">
-            Loading Healthcare Dashboard...
-          </p>
-        </div>
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow-lg">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <p className="text-2xl text-red-600 mb-2">Error loading dashboard</p>
-          <p className="text-gray-600">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-  // If no data is available
-  if (!dashboardData) {
-    return null;
-  }
+function ChartFix({ children }) {
   return (
-    <div className="bg-gray-50 min-h-screen p-8">
-      <div className="container mx-auto">
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            icon={Calendar}
-            title="Total Appointments"
-            value={dashboardData.statusCounts.reduce(
-              (sum, status) => sum + status.count,
-              0
-            )}
-            trend={10}
-          />
-          <StatCard
-            icon={IndianRupee}
-            title="Total Revenue"
-            value={`₹${dashboardData.totalRevenue.toLocaleString()}`}
-            trend={15}
-          />
-          <StatCard
-            icon={ShoppingCart}
-            title="Total Sales"
-            value={dashboardData.totalSells}
-            trend={8}
-          />
-          <StatCard
-            icon={TestTube}
-            title="Lab Tests"
-            value={dashboardData.testCountsByStatus.reduce(
-              (sum, status) => sum + status.count,
-              0
-            )}
-            trend={12}
-          />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Charts Section - Left Side */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Top Charts Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <AppointmentStatusChart
-                statusCounts={dashboardData.statusCounts}
-              />
-              <SalesChart selles={dashboardData.selles} />
-            </div>
-
-            {/* Lab Performance Chart */}
-            <div className="w-full">
-              <LabPerformanceChart today={dashboardData.today} />
-            </div>
-          </div>
-
-          {/* Right Sidebar - Today's Comprehensive Stats */}
-          <div className="lg:col-span-1">
-            <TodayStats
-              statusCounts={dashboardData.statusCounts}
-              today={dashboardData.today}
-              todaysAppointments={dashboardData.todaysAppointments}
-              todaySells={dashboardData.todaySells}
-              todayRevenue={dashboardData.todayRevenue}
-              totalSells={dashboardData.totalSells}
-            />
-          </div>
-        </div>
-      </div>
+    <div className="w-full min-h-[280px]">
+      <ResponsiveContainer width="100%" height="100%">
+        {children}
+      </ResponsiveContainer>
     </div>
   );
-};
+}
 
-export default DashboardPage;
+function SimpleTable({ headers, rows }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-separate border-spacing-y-2">
+        <thead>
+          <tr className="text-left text-purple-700">
+            {headers.map((h) => (
+              <th key={h} className="pb-2 font-semibold">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr
+              key={i}
+              className="bg-purple-50 hover:bg-purple-100 transition rounded-lg"
+            >
+              {r.map((c, j) => (
+                <td key={j} className="py-3 px-2">
+                  {renderCell(c)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function renderCell(value) {
+  if (["Confirmed", "Live", "Completed"].includes(value)) {
+    return (
+      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        {value}
+      </span>
+    );
+  }
+
+  if (["Pending", "Scheduled", "New"].includes(value)) {
+    return (
+      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+        {value}
+      </span>
+    );
+  }
+  return value;
+}

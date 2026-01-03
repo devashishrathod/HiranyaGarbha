@@ -9,7 +9,6 @@ import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import store from "./store/store";
 
-// Loading component to show while chunks are loading
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="text-center">
@@ -19,14 +18,14 @@ const LoadingFallback = () => (
   </div>
 );
 
-// Layouts - keep MainLayout eager loaded as it's used across most pages
 import MainLayout from "./components/Layout/MainLayout";
 
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
+const CategoryPage = lazy(() => import("./pages/category/categoryPage"));
+const CategoryAddEdit = lazy(() => import("./pages/category/CategoryAddEdit"));
 
-// Create a client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -49,6 +48,22 @@ const App = () => {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                {/* <Route path="/users" element={<Users />} /> */}
+                <Route path="/category" element={<CategoryPage />} />
+                <Route path="/category/add" element={<CategoryAddEdit />} />
+                <Route
+                  path="/category/update/:id"
+                  element={<CategoryAddEdit />}
+                />
+                {/* <Route path="/experts" element={<Experts />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/enquiries" element={<Enquiries />} />
+                <Route
+                  path="/prenatal-services"
+                  element={<PrenatalServices />}
+                />
+                <Route path="/nutrition" element={<Nutrition />} />
+                <Route path="/gallery" element={<Gallery />} /> */}
                 {/* Default redirect to dashboard */}
                 <Route
                   path="/"

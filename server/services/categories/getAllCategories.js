@@ -43,6 +43,7 @@ exports.getAllCategories = async (query) => {
       image: 1,
       isActive: 1,
       createdAt: 1,
+      updatedAt: 1,
     },
   });
   const sortStage = {};

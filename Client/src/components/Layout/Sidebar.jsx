@@ -4,9 +4,8 @@ import useAuth from "../../hooks/useAuth";
 const Sidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
-  // Extract the actual user data from the nested structure
   const userData = user || {};
-  // Enhanced icons with better medical/healthcare themed SVG paths
+
   const icons = {
     dashboard:
       "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
@@ -14,36 +13,27 @@ const Sidebar = () => {
       "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
     users:
       "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
-    //  lab: "M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M7 4h10M7 4l-.5 14a2 2 0 002 2h7a2 2 0 002-2L17 4M9 9v6m6-6v6M12 9v6",
-    doctors:
-      "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-    // patients:
-    //   "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-    // appointments:
-    //   "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
     categories: "M19 11H5m14-4H5m14 8H5m14-4H5",
-    subcategories: "M4 6h16M4 10h16M4 14h16M4 18h16",
-    // brands:
-    //   "M7 4V2c0-.6.4-1 1-1h8c.6 0 1 .4 1 1v2M7 4h10m0 0v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4",
-    // banners:
-    //   "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
-    // packages: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-    // medicines:
-    //   "M9 3v2m6-2v2M9 19v2m6-2v2M20 9H4m16 6H4m5-11h6a2 2 0 012 2v8a2 2 0 01-2 2H9a2 2 0 01-2-2V6a2 2 0 012-2z",
-    // offers:
-    //   "M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0H7m10 0l2 2-2 2m0-4h4m-4 0v4",
-    // contact:
-    //   "M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
-    // enquiries:
-    //   "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-    // orders:
-    //   "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
-    // clinics:
-    //   "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-    // tests:
-    //   "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    //subcategories: "M4 6h16M4 10h16M4 14h16M4 18h16",
+    products: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+    enquiries:
+      "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    prenatal_services:
+      "M12 22s8-4 8-12a8 8 0 10-16 0c0 8 8 12 8 12zm0-10a4 4 0 110-8 4 4 0 010 8z",
+    nutrition:
+      "M12 3C7 3 3 7 3 12c0 3.87 3.13 7 7 7h4c3.87 0 7-3.13 7-7 0-5-4-9-9-9zm0 4a3 3 0 100 6 3 3 0 000-6z",
+    meal_plans: "M4 6h16M4 10h16M4 14h16M4 18h16m-8-8v8",
+    experts:
+      "M17 20v-2a3 3 0 00-6 0v2m6 0H7v-2a3 3 0 016 0v2m-6 0H4v-2a5 5 0 0110 0v2",
+    tips: "M12 3a6 6 0 014 10 4 4 0 01-1 3v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2a4 4 0 01-1-3 6 6 0 014-10z",
+    trimester_plans:
+      "M12 21c4.418 0 8-3.582 8-8a8 8 0 10-13.856 5.856A8 8 0 0012 21zm0-9a3 3 0 110-6 3 3 0 010 6z",
+    wellness:
+      "M12 20c4 0 7-3 8-6-2-1-4-2-8-2s-6 1-8 2c1 3 4 6 8 6zm0-8a4 4 0 100-8 4 4 0 000 8z",
+    gallery:
+      "M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm3 3a2 2 0 114 0 2 2 0 01-4 0zm10 8l-4-5-3 4H7l5-6 5 7h-2z",
   };
-  // Menu items based on user role with better organization
+
   const getMenuItems = () => {
     const commonItems = [
       {
@@ -59,7 +49,6 @@ const Sidebar = () => {
         color: "text-green-500",
       },
     ];
-    // Add role-specific menu items based on the nested user.result.role
     switch (userData?.role) {
       case "admin":
         return [
@@ -71,9 +60,15 @@ const Sidebar = () => {
             color: "text-purple-500",
           },
           {
-            name: "Card",
-            path: "/card",
-            icon: icons.doctors,
+            name: "Experts",
+            path: "/experts",
+            icon: icons.experts,
+            color: "text-yellow-500",
+          },
+          {
+            name: "Tips",
+            path: "/tips",
+            icon: icons.tips,
             color: "text-blue-600",
           },
           {
@@ -82,14 +77,63 @@ const Sidebar = () => {
             icon: icons.categories,
             color: "text-orange-500",
           },
+          // {
+          //   name: "Subcategories",
+          //   path: "/subcategories",
+          //   icon: icons.subcategories,
+          //   color: "text-red-500",
+          // },
           {
-            name: "Subcategories",
-            path: "/subcategories",
-            icon: icons.subcategories,
-            color: "text-yellow-500",
+            name: "Prenatal Care Services",
+            path: "/prenatal-cares",
+            icon: icons.prenatal_services,
+            color: "text-pink-500",
+          },
+          {
+            name: "Pregnancy Trimester Plans",
+            path: "/pregnancy-trimester-plans",
+            icon: icons.trimester_plans,
+            color: "text-green-500",
+          },
+          {
+            name: "Nutrition Plans",
+            path: "/nutrition-plans",
+            icon: icons.nutrition,
+            color: "text-purple-500",
+          },
+          {
+            name: "Meal Plans",
+            path: "/meal-plans",
+            icon: icons.meal_plans,
+            color: "text-violet-500",
+          },
+          {
+            name: "Wellness & Mindfulness",
+            path: "/wellness-mindfulness",
+            icon: icons.wellness,
+            color: "text-indigo-500",
+          },
+
+          {
+            name: "Products",
+            path: "/products",
+            icon: icons.products,
+            color: "text-sky-500",
+          },
+          {
+            name: "Contact Inquiries",
+            path: "/contact-inquiries",
+            icon: icons.enquiries,
+            color: "text-emerald-500",
+          },
+          {
+            name: "Gallery",
+            path: "/gallery",
+            icon: icons.gallery,
+            color: "text-teal-500",
           },
         ];
-      // case "doctor":
+      // case "staff":
       // return [
       //   ...commonItems,
       //   {
@@ -114,52 +158,6 @@ const Sidebar = () => {
       //       icon: icons.appointments,
       //       color: "text-blue-600",
       //     },
-      //     {
-      //       name: "Patients",
-      //       path: "/patients",
-      //       icon: icons.patients,
-      //       color: "text-green-600",
-      //     },
-      //     {
-      //       name: "Lab",
-      //       path: "/labs",
-      //       icon: icons.lab,
-      //       color: "text-purple-500",
-      //     },
-      //     {
-      //       name: "Doctors",
-      //       path: "/doctors",
-      //       icon: icons.doctors,
-      //       color: "text-blue-600",
-      //     },
-      //     {
-      //       name: "Clinics",
-      //       path: "/clinics",
-      //       icon: icons.clinics,
-      //       color: "text-red-600",
-      //     },
-      //   ];
-      // case "lab":
-      //   return [
-      //     ...commonItems,
-      //     {
-      //       name: "Lab Tests",
-      //       path: "/tests",
-      //       icon: icons.tests,
-      //       color: "text-purple-600",
-      //     },
-      //     {
-      //       name: "Patients",
-      //       path: "/labpatient",
-      //       icon: icons.patients,
-      //       color: "text-green-600",
-      //     },
-      //     {
-      //       name: "Test List",
-      //       path: "/testlist",
-      //       icon: icons.lab,
-      //       color: "text-purple-500",
-      //     },
       //   ];
       default:
         return commonItems;
@@ -167,8 +165,6 @@ const Sidebar = () => {
   };
 
   const menuItems = getMenuItems();
-
-  // For debugging
   console.log("User object:", user);
   console.log("User data extracted:", userData);
   console.log("Role value:", userData?.role);

@@ -1,12 +1,25 @@
 import axios from "axios";
 
 const baseURL = "http://localhost:8080/hiranyagarbha";
+//const baseURL = "https://hiranyagarbha.onrender.com/hiranyagarbha";
 
+// const axiosInstance = axios.create({
+//   baseURL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 const axiosInstance = axios.create({
   baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+});
+// JSON header sirf tab lagao jab FormData NA ho
+axiosInstance.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"]; // 👈 MOST IMPORTANT
+  } else {
+    config.headers["Content-Type"] = "application/json";
+  }
+  return config;
 });
 
 // Request interceptor to add token to requests
