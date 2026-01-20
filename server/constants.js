@@ -19,6 +19,11 @@ module.exports = {
     IOS: "ios",
   }),
 
+  CATEGORY_TYPES: Object.freeze({
+    PRODUCTS: "product",
+    GALLERY: "gallery",
+  }),
+
   SUBSCRIPTION_TYPES: Object.freeze({
     WEEKLY: "weekly",
     MONTHLY: "monthly",

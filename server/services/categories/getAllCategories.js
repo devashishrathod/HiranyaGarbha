@@ -7,6 +7,7 @@ exports.getAllCategories = async (query) => {
     limit,
     search,
     name,
+    type,
     isActive,
     fromDate,
     toDate,
@@ -20,6 +21,10 @@ exports.getAllCategories = async (query) => {
     match.isActive = isActive === "true" || isActive === true;
   }
   if (name) match.name = { $regex: new RegExp(name, "i") };
+  if (type) {
+    type = type?.toLowerCase();
+    match.type = type;
+  }
   if (search) {
     match.$or = [
       { name: { $regex: new RegExp(search, "i") } },
@@ -40,6 +45,7 @@ exports.getAllCategories = async (query) => {
     $project: {
       name: 1,
       description: 1,
+      type: 1,
       image: 1,
       isActive: 1,
       createdAt: 1,

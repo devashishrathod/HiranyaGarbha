@@ -8,9 +8,9 @@ const { createCategory } = require("../../services/categories");
 const { validateCreateCategory } = require("../../validator/categories");
 
 exports.createCategory = asyncWrapper(async (req, res) => {
-  const { error } = validateCreateCategory(req.body);
+  const { error, value } = validateCreateCategory(req.body);
   if (error) throwError(422, cleanJoiError(error));
   const image = req.files?.image;
-  const category = await createCategory(req.body, image);
-  return sendSuccess(res, 201, "Category created", category);
+  const category = await createCategory(value, image);
+  return sendSuccess(res, 201, "Category created successfully", category);
 });
