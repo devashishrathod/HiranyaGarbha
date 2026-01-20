@@ -1,23 +1,20 @@
 const mongoose = require("mongoose");
 const { isValidZipCode } = require("../validator/common");
-const { userField, productsField } = require("./validObjectId");
+const { userField } = require("./validObjectId");
 
 const locationSchema = new mongoose.Schema(
   {
-    user: userField,
-    productIds: productsField,
+    userId: userField,
     name: { type: String },
     shopOrBuildingNumber: { type: String },
     address: { type: String },
     area: { type: String },
-    landMark: { type: String },
-    state: { type: String },
     city: { type: String },
     district: { type: String },
+    state: { type: String },
     country: { type: String },
-    street: { type: String },
     formattedAddress: { type: String },
-    zipCode: {
+    zipcode: {
       type: String,
       validate: {
         validator: function (v) {
@@ -27,28 +24,18 @@ const locationSchema = new mongoose.Schema(
           `${props.value} is not a valid ZIP/postal code for country ${props.instance.country}`,
       },
     },
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        default: "Point",
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-      },
-    },
+    coordinates: { type: [Number], default: [0, 0] }, // [lat , lng]
+    isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 locationSchema.index(
   { location: "2dsphere" },
   {
-    partialFilterExpression: {
-      "location.coordinates": { $exists: true, $type: "array" },
-    },
-  }
+    partialFilterExpression: { coordinates: { $exists: true, $type: "array" } },
+  },
 );
 
 module.exports = mongoose.model("Location", locationSchema);
