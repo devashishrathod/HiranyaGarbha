@@ -12,6 +12,11 @@ export default {
     OTHER: "other",
   }),
 
+  CATEGORY_TYPES: Object.freeze({
+    PRODUCTS: "product",
+    GALLERY: "gallery",
+  }),
+
   PLATFORMS: Object.freeze({
     WEB: "web",
     ANDROID: "android",

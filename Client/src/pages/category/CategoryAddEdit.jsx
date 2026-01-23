@@ -7,6 +7,7 @@ import {
 } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import { toast } from "react-hot-toast";
+import CONSTANTS from "../../constants";
 import Loader from "../../components/UI/Loader";
 
 export const CategoryAddEdit = () => {
@@ -17,6 +18,7 @@ export const CategoryAddEdit = () => {
 
   const [formData, setFormData] = useState({
     name: "",
+    type: "",
     description: "",
   });
 
@@ -28,11 +30,11 @@ export const CategoryAddEdit = () => {
     {
       onUploadProgress: (progressEvent) => {
         const progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          (progressEvent.loaded * 100) / (progressEvent.total || 1),
         );
         setUploadProgress(progress);
       },
-    }
+    },
   );
 
   const { mutate: updateCategory, isLoading: isUpdating } = usePutMutation(
@@ -41,11 +43,11 @@ export const CategoryAddEdit = () => {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (progressEvent) => {
         const progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          (progressEvent.loaded * 100) / (progressEvent.total || 1),
         );
         setUploadProgress(progress);
       },
-    }
+    },
   );
 
   const { data: categoryData, isLoading: isFetchingCategory } = useGetQuery(
@@ -55,7 +57,7 @@ export const CategoryAddEdit = () => {
     {
       enabled: isEditMode,
       refetchOnWindowFocus: false,
-    }
+    },
   );
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export const CategoryAddEdit = () => {
       if (category) {
         setFormData({
           name: category.name || "",
+          type: category.type || "",
           description: category.description || "",
         });
         if (category.image) {
@@ -84,8 +87,13 @@ export const CategoryAddEdit = () => {
       toast.error("Title is required");
       return;
     }
+    if (!formData.type) {
+      toast.error("Category type is required");
+      return;
+    }
     const formDataToSend = new FormData();
     formDataToSend.append("name", formData.name.trim());
+    formDataToSend.append("type", formData.type);
     formDataToSend.append("description", formData.description.trim());
     if (formData.image) {
       formDataToSend.append("image", formData.image);
@@ -93,14 +101,14 @@ export const CategoryAddEdit = () => {
     setUploadProgress(0);
     const onSuccess = (response) => {
       console.log("Success response:", response);
-      setFormData({ name: "", description: "", image: "" });
+      setFormData({ name: "", type: "", description: "", image: "" });
       setPreviewImage(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setUploadProgress(0);
       toast.success(
         isEditMode
           ? "Category updated successfully!"
-          : "Category added successfully!"
+          : "Category added successfully!",
       );
       setTimeout(() => navigate("/category"), 1000);
     };
@@ -199,6 +207,28 @@ export const CategoryAddEdit = () => {
             <span className="text-xs text-gray-500 mt-1">
               {formData.name.length}/100 characters
             </span>
+          </div>
+          {/* Type */}
+          <div className="flex flex-col">
+            <label htmlFor="type" className="mb-2 font-medium text-gray-700">
+              Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="type"
+              value={formData.type}
+              onChange={(e) =>
+                setFormData({ ...formData, type: e.target.value })
+              }
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              required
+            >
+              <option value="">Select category type</option>
+              {Object.values(CONSTANTS.CATEGORY_TYPES).map((type) => (
+                <option key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </option>
+              ))}
+            </select>
           </div>
           {/* Description */}
           <div className="flex flex-col">

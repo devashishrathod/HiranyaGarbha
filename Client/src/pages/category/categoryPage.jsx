@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import Pagination from "../../components/UI/Pagination";
 import { CategoryView } from "./CategoryView";
 import { CategoryAddEdit } from "./CategoryAddEdit";
+import formatGrammer from "../../utils/formatGrammer";
 
 export const CategoryPage = () => {
   const [categories, setCategories] = useState([]);
@@ -31,13 +32,13 @@ export const CategoryPage = () => {
   } = useGetQuery(
     `${API_ENDPOINTS.CATEGORIES.GET_ALL.replace(
       "page=1",
-      `page=${pagination.currentPage}`
-    ).replace("limit=20", `limit=${pagination.limit}`)}`
+      `page=${pagination.currentPage}`,
+    ).replace("limit=20", `limit=${pagination.limit}`)}`,
   );
   console.log(categoryData, "category data from category page");
 
   const { mutate: deleteCategory, isLoading: isDeleting } = useDeleteMutation(
-    API_ENDPOINTS.CATEGORIES.DELETE.replace(":id", "{id}")
+    API_ENDPOINTS.CATEGORIES.DELETE.replace(":id", "{id}"),
   );
 
   useEffect(() => {
@@ -69,14 +70,23 @@ export const CategoryPage = () => {
     {
       key: "title",
       title: "Title",
-      render: (category) => <span>{category.name || "No Title"}</span>,
+      render: (category) => (
+        <span>{formatGrammer(category.name) || "No Title"}</span>
+      ),
+    },
+    {
+      key: "type",
+      title: "Type",
+      render: (category) => (
+        <span>{formatGrammer(category.type) || "No Type"}</span>
+      ),
     },
     {
       key: "description",
       title: "Description",
       render: (category) => (
         <div className="max-w-xs truncate">
-          {category.description || "No Description"}
+          {formatGrammer(category.description) || "No Description"}
         </div>
       ),
     },
@@ -104,7 +114,7 @@ export const CategoryPage = () => {
   };
 
   const handleEdit = (category) => {
-    navigate(`/categories/update/${category._id}`);
+    navigate(`/category/update/${category._id}`);
   };
 
   const handleDelete = (categoryToDelete) => {

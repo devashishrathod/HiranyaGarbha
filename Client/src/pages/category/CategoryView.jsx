@@ -1,3 +1,5 @@
+import formatGrammer from "../../utils/formatGrammer";
+
 export const CategoryView = ({ category, onClose }) => {
   if (!category) return null;
   return (
@@ -39,13 +41,18 @@ export const CategoryView = ({ category, onClose }) => {
           {/* Title */}
           <div>
             <h3 className="text-sm font-medium text-gray-500">Title</h3>
-            <p className="mt-1">{category.name}</p>
+            <p className="mt-1">{formatGrammer(category.name)}</p>
+          </div>
+          {/* Type */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Type</h3>
+            <p className="mt-1">{formatGrammer(category.type)}</p>
           </div>
           {/* Description */}
           <div>
             <h3 className="text-sm font-medium text-gray-500">Description</h3>
             <p className="mt-1">
-              {category.description || "No description provided"}
+              {formatGrammer(category.description) || "No description provided"}
             </p>
           </div>
           {/* Created At */}
