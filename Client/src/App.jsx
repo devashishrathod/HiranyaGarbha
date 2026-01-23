@@ -19,66 +19,72 @@ const LoadingFallback = () => (
 );
 
 import MainLayout from "./components/Layout/MainLayout";
+import { TrimesterPage } from "./pages/pregnancyTrimester/trimesterPage";
+import { TrimesterAddEdit } from "./pages/pregnancyTrimester/trimesterAddEdit";
+import { NutritionPlanPage } from "./pages/nutritions/nutritionPlanPage";
+import { NutritionPlanAddEdit } from "./pages/nutritions/nutritionPlanAddEdit";
+import { MealPlanPage } from "./pages/mealPlans/mealPlanPage";
+import { MealPlanAddEdit } from "./pages/mealPlans/mealPlanAddEdit";
 /* ===================== AUTH & DASHBOARD ===================== */
 const Login = lazy(() =>
-  import("./pages/Login").then((m) => ({ default: m.Login }))
+  import("./pages/Login").then((m) => ({ default: m.Login })),
 );
 const Profile = lazy(() =>
-  import("./pages/Profile").then((m) => ({ default: m.Profile }))
+  import("./pages/Profile").then((m) => ({ default: m.Profile })),
 );
 const Dashboard = lazy(() =>
-  import("./pages/Dashboard").then((m) => ({ default: m.AdminDashboard }))
+  import("./pages/Dashboard").then((m) => ({ default: m.AdminDashboard })),
 );
 /* ===================== TIPS ===================== */
 const TipsPage = lazy(() =>
-  import("./pages/tips/tipsPage").then((m) => ({ default: m.TipsPage }))
+  import("./pages/tips/tipsPage").then((m) => ({ default: m.TipsPage })),
 );
 const TipsAddEdit = lazy(() =>
   import("./pages/tips/tipsAddEdit").then((m) => ({
     default: m.TipsAddEdit,
-  }))
+  })),
 );
 /* ===================== USERS ===================== */
 const UserPage = lazy(() =>
-  import("./pages/users/userPage").then((m) => ({ default: m.UserPage }))
+  import("./pages/users/userPage").then((m) => ({ default: m.UserPage })),
 );
 const UserAddEdit = lazy(() =>
   import("./pages/users/userAddEdit").then((m) => ({
     default: m.UserAddEdit,
-  }))
+  })),
 );
 /* ===================== EXPERTS ===================== */
 const ExpertPage = lazy(() =>
   import("./pages/experts/expertPage").then((m) => ({
     default: m.ExpertPage,
-  }))
+  })),
 );
 const ExpertAddEdit = lazy(() =>
   import("./pages/experts/expertAddEdit").then((m) => ({
     default: m.ExpertAddEdit,
-  }))
+  })),
 );
 /* ===================== PRENATAL SERVICES ===================== */
 const PrenatalServicesPage = lazy(() =>
   import("./pages/prenatalServices/prenatalServicePage").then((m) => ({
     default: m.PrenatalServicesPage,
-  }))
+  })),
 );
 const PrenatalServicesAddEdit = lazy(() =>
   import("./pages/prenatalServices/prenatalServiceAddEdit").then((m) => ({
     default: m.PrenatalServicesAddEdit,
-  }))
+  })),
 );
 /* ===================== CATEGORY ===================== */
 const CategoryPage = lazy(() =>
   import("./pages/category/categoryPage").then((m) => ({
     default: m.CategoryPage,
-  }))
+  })),
 );
 const CategoryAddEdit = lazy(() =>
   import("./pages/category/CategoryAddEdit").then((m) => ({
     default: m.CategoryAddEdit,
-  }))
+  })),
 );
 
 const queryClient = new QueryClient({
@@ -130,10 +136,27 @@ const App = () => {
                   path="/prenatal-cares/update/:id"
                   element={<PrenatalServicesAddEdit />}
                 />
-                {/* <Route path="/products" element={<Products />} />
-                <Route path="/enquiries" element={<Enquiries />} />
-                <Route path="/nutrition" element={<Nutrition />} />
-                <Route path="/gallery" element={<Gallery />} /> */}
+                <Route path="/trimester" element={<TrimesterPage />} />
+                <Route path="/trimester/add" element={<TrimesterAddEdit />} />
+                <Route
+                  path="/trimester/update/:id"
+                  element={<TrimesterAddEdit />}
+                />
+                <Route path="/nutritions" element={<NutritionPlanPage />} />
+                <Route
+                  path="/nutritions/add"
+                  element={<NutritionPlanAddEdit />}
+                />
+                <Route
+                  path="/nutritions/update/:id"
+                  element={<NutritionPlanAddEdit />}
+                />
+                <Route path="/meal-plans" element={<MealPlanPage />} />
+                <Route path="/meal-plans/add" element={<MealPlanAddEdit />} />
+                <Route
+                  path="/meal-plans/update/:id"
+                  element={<MealPlanAddEdit />}
+                />
                 {/* Default redirect to dashboard */}
                 <Route
                   path="/"

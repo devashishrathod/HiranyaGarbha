@@ -32,6 +32,10 @@ const Sidebar = () => {
       "M12 20c4 0 7-3 8-6-2-1-4-2-8-2s-6 1-8 2c1 3 4 6 8 6zm0-8a4 4 0 100-8 4 4 0 000 8z",
     gallery:
       "M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm3 3a2 2 0 114 0 2 2 0 01-4 0zm10 8l-4-5-3 4H7l5-6 5 7h-2z",
+    privacy_policy:
+      "M12 3l7 4v5c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V7l7-4zm0 4a3 3 0 00-3 3c0 1.3.84 2.4 2 2.82V15a1 1 0 002 0v-2.18A3 3 0 0015 10a3 3 0 00-3-3z",
+    terms_conditions:
+      "M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm8 1v5h5M8 11h8M8 15h8M8 19h5",
   };
 
   const getMenuItems = () => {
@@ -91,13 +95,13 @@ const Sidebar = () => {
           },
           {
             name: "Pregnancy Trimester Plans",
-            path: "/pregnancy-trimester-plans",
+            path: "/trimester",
             icon: icons.trimester_plans,
             color: "text-green-500",
           },
           {
             name: "Nutrition Plans",
-            path: "/nutrition-plans",
+            path: "/nutritions",
             icon: icons.nutrition,
             color: "text-purple-500",
           },
@@ -131,6 +135,18 @@ const Sidebar = () => {
             path: "/gallery",
             icon: icons.gallery,
             color: "text-teal-500",
+          },
+          {
+            name: "Privacy & Policies",
+            path: "/privacies",
+            icon: icons.privacy_policy,
+            color: "text-blue-600",
+          },
+          {
+            name: "Terms & Conditions",
+            path: "/terms",
+            icon: icons.terms_conditions,
+            color: "text-sky-500",
           },
         ];
       // case "staff":

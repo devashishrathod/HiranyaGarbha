@@ -5,6 +5,8 @@ const baseURL =
     ? import.meta.env.VITE_PROD_BACKEND_URL
     : import.meta.env.VITE_LOCAL_BACKEND_URL;
 
+console.log("baseURL", baseURL);
+
 const axiosInstance = axios.create({ baseURL });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -26,7 +28,7 @@ axiosInstance.interceptors.response.use(
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
