@@ -12,10 +12,17 @@ const API_ENDPOINTS = {
   },
   CATEGORIES: {
     CREATE: "/categories/create",
-    UPDATE: "/categories/update",
-    DELETE: "/categories/delete",
+    UPDATE: "/categories/update/:id",
+    DELETE: "/categories/delete/:id",
     GET_ALL: "/categories/getAll",
-    GET_ONE: "/categories/get",
+    GET_ONE: "/categories/get/:id",
+  },
+  BANNERS: {
+    CREATE: "/banners/create",
+    UPDATE: "/banners/update/:id",
+    DELETE: "/banners/delete",
+    GET_ALL: "/banners/getAll",
+    GET_ONE: "/banners/get/:id",
   },
 };
 

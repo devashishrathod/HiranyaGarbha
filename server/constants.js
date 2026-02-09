@@ -93,6 +93,6 @@ module.exports = {
     PRODUCT:
       "https://res.cloudinary.com/drvdnqydw/image/upload/f_auto,q_auto/v1/Images/zsbowllown6ddeb4jnw0?_a=BAMAK+Jw0",
     BANNER:
-      "https://res.cloudinary.com/drvdnqydw/image/upload/f_auto,q_auto/v1/Images/zsbowllown6ddeb4jnw0?_a=BAMAK+Jw0",
+      "https://media.istockphoto.com/id/1370679896/photo/the-concept-of-protecting-and-supporting-the-human-fetus.jpg?s=2048x2048&w=is&k=20&c=lWel8Fu0yuIjT20iIYUbdA0WneA26PUfUE-Dp9hpBbs=",
   }),
 };

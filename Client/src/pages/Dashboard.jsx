@@ -1,307 +1,421 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  Users,
+  Activity,
   Calendar,
-  IndianRupee,
-  Package,
-  HeartPulse,
-  Image,
-  PhoneCall,
   ClipboardList,
+  MessageSquareText,
+  Sparkles,
+  Users,
 } from "lucide-react";
+import useAuth from "../hooks/useAuth";
+import { buildMockDashboard } from "../components/dashboard/dashboardMock";
+import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
-
-/* ================= FILTER OPTIONS ================= */
-const FILTERS = [
-  "Today",
-  "Yesterday",
-  "Weekly",
-  "Monthly",
-  "Last 3 Months",
-  "Quarterly",
-  "Half Year",
-  "Annual",
-];
-
-/* ================= MOCK DATA (API READY) ================= */
-const appointmentChartData = {
-  Weekly: [
-    { name: "Mon", value: 12 },
-    { name: "Tue", value: 18 },
-    { name: "Wed", value: 10 },
-    { name: "Thu", value: 22 },
-    { name: "Fri", value: 17 },
-    { name: "Sat", value: 25 },
-  ],
-  Monthly: [
-    { name: "W1", value: 12000 },
-    { name: "W2", value: 18500 },
-    { name: "W3", value: 14200 },
-    { name: "W4", value: 21000 },
-  ],
-};
+  AppointmentsTrendChart,
+  SessionsStackChart,
+} from "../components/dashboard/DashboardCharts";
+import { KpiCard } from "../components/dashboard/KpiCard";
+import { ModuleGrid } from "../components/dashboard/ModuleGrid";
+import { Panel } from "../components/dashboard/Panel";
+import { RangeFilter } from "../components/dashboard/RangeFilter";
+import { QueueTable } from "../components/dashboard/QueueTable";
+import {
+  hasPermission,
+  PERMISSIONS,
+} from "../components/dashboard/permissions";
+import { SectionHeader } from "../components/dashboard/ui";
+import {
+  DASHBOARD_LABELS,
+  ROLES,
+  TIME_PERIODS,
+} from "../constants/appConstants";
 
 export function AdminDashboard() {
-  const [chartFilter, setChartFilter] = useState("Weekly");
-  const [tableFilter, setTableFilter] = useState("Today");
+  const { user } = useAuth();
+  const [range, setRange] = useState(TIME_PERIODS.WEEKLY);
+  const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
 
-  const chartData = useMemo(
-    () => appointmentChartData[chartFilter] || [],
-    [chartFilter]
+  const dashboard = useMemo(
+    () =>
+      buildMockDashboard({
+        range,
+        ...(range === TIME_PERIODS.CUSTOM
+          ? dateRange
+          : { startDate: "", endDate: "" }),
+      }),
+    [range, dateRange],
   );
 
+  const canSeeUsers = hasPermission(user, PERMISSIONS.USERS_VIEW);
+  const canSeeAppointments = hasPermission(user, PERMISSIONS.APPOINTMENTS_VIEW);
+  const canSeeSessions = hasPermission(user, PERMISSIONS.SESSIONS_VIEW);
+  const canSeeContent = hasPermission(user, PERMISSIONS.CONTENT_VIEW);
+  const canSeeEnquiries = hasPermission(user, PERMISSIONS.ENQUIRIES_VIEW);
+  const canSeeAnalytics = hasPermission(user, PERMISSIONS.ANALYTICS_VIEW);
+  const role = getRole(user);
+  const canSeeOutlets = role === ROLES.ADMIN || role === ROLES.SUBADMIN;
+
+  const modules = useMemo(() => {
+    const all = dashboard.modules || [];
+    if (getRole(user) === "admin") return all;
+
+    return all.filter((m) => {
+      if (m.id === "users") return canSeeUsers;
+      if (m.id === "content") return canSeeContent;
+      if (m.id === "enquiries") return canSeeEnquiries;
+      return true;
+    });
+  }, [dashboard.modules, user, canSeeUsers, canSeeContent, canSeeEnquiries]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fff1f5] via-[#f5e9ff] to-white p-6">
-      {/* HEADER */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-purple-800">
-          Hiranyagarbha Admin Dashboard
-        </h1>
-        <p className="text-sm text-gray-600">
-          Complete Business Overview & Reports
-        </p>
-      </div>
+    <div className="min-h-screen">
+      <div className="rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-indigo-50/40 to-white p-4 sm:p-6">
+        <SectionHeader
+          title={DASHBOARD_LABELS.TITLE}
+          subtitle={DASHBOARD_LABELS.SUBTITLE}
+          right={
+            <RangeFilter
+              value={range}
+              onChange={setRange}
+              startDate={dateRange.startDate}
+              endDate={dateRange.endDate}
+              onDateChange={setDateRange}
+            />
+          }
+        />
 
-      {/* KPI SECTION */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <Kpi title="Today's Appointments" value="14" icon={<Calendar />} />
-        <Kpi title="Today's Sales" value="₹8,450" icon={<IndianRupee />} />
-        <Kpi title="Active Sessions" value="9" icon={<HeartPulse />} />
-        <Kpi title="Total Products" value="58" icon={<Package />} />
-        <Kpi title="Registered Users" value="1,248" icon={<Users />} />
-        <Kpi title="Gallery Items" value="186" icon={<Image />} />
-        <Kpi title="Contact Requests" value="24" icon={<PhoneCall />} />
-      </div>
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-9">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <KpiCard
+                title={DASHBOARD_LABELS.KPI_CUSTOMERS}
+                value={dashboard.metrics.users.current}
+                subLabel={DASHBOARD_LABELS.LABEL_NEW}
+                subValue={dashboard.metrics.registrations.current}
+                trendPct={dashboard.metrics.users.trendPct}
+                icon={<Users className="h-5 w-5" />}
+                tone="indigo"
+              />
+              <KpiCard
+                title={DASHBOARD_LABELS.KPI_APPOINTMENTS}
+                value={dashboard.metrics.appointments.current}
+                subLabel={DASHBOARD_LABELS.LABEL_PREV}
+                subValue={dashboard.metrics.appointments.prev}
+                trendPct={dashboard.metrics.appointments.trendPct}
+                icon={<Calendar className="h-5 w-5" />}
+                tone="emerald"
+              />
+              <KpiCard
+                title={DASHBOARD_LABELS.KPI_SESSIONS}
+                value={dashboard.metrics.sessions.current}
+                subLabel={DASHBOARD_LABELS.LABEL_PREV}
+                subValue={dashboard.metrics.sessions.prev}
+                trendPct={dashboard.metrics.sessions.trendPct}
+                icon={<Activity className="h-5 w-5" />}
+                tone="violet"
+              />
+              <KpiCard
+                title={DASHBOARD_LABELS.KPI_CONTENT_PUBLISHED}
+                value={dashboard.metrics.contentPublished.current}
+                subLabel={DASHBOARD_LABELS.LABEL_PREV}
+                subValue={dashboard.metrics.contentPublished.prev}
+                trendPct={dashboard.metrics.contentPublished.trendPct}
+                icon={<Sparkles className="h-5 w-5" />}
+                tone="rose"
+              />
+            </div>
 
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <Card
-          title="Appointment Reports"
-          filter={chartFilter}
-          onChange={setChartFilter}
-        >
-          <ChartFix>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="value" stroke="#7c3aed" strokeWidth={3} />
-            </LineChart>
-          </ChartFix>
-        </Card>
+            <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <Panel
+                title={DASHBOARD_LABELS.PANEL_APPOINTMENTS_TREND}
+                subtitle={DASHBOARD_LABELS.PANEL_APPOINTMENTS_TREND_SUBTITLE}
+                right={
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {range.toUpperCase()}
+                  </span>
+                }
+              >
+                {canSeeAnalytics && canSeeAppointments ? (
+                  <AppointmentsTrendChart
+                    data={dashboard.charts.appointments}
+                  />
+                ) : (
+                  <LockedNotice />
+                )}
+              </Panel>
 
-        <Card
-          title="Product Sales"
-          filter={chartFilter}
-          onChange={setChartFilter}
-        >
-          <ChartFix>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ChartFix>
-        </Card>
-      </div>
+              <Panel
+                title={DASHBOARD_LABELS.PANEL_SESSIONS_OVERVIEW}
+                subtitle={DASHBOARD_LABELS.PANEL_SESSIONS_OVERVIEW_SUBTITLE}
+                right={
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {range.toUpperCase()}
+                  </span>
+                }
+              >
+                {canSeeAnalytics && canSeeSessions ? (
+                  <SessionsStackChart data={dashboard.charts.sessions} />
+                ) : (
+                  <LockedNotice />
+                )}
+              </Panel>
+            </div>
 
-      {/* TABLES ROW 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <TableCard
-          title="Today's Appointments"
-          filter={tableFilter}
-          onChange={setTableFilter}
-        >
-          <SimpleTable
-            headers={["Client", "Service", "Time", "Status"]}
-            rows={[
-              ["Anita Sharma", "Prenatal Care", "10:30 AM", "Confirmed"],
-              ["Neha Verma", "Nutrition Plan", "12:00 PM", "Pending"],
-              ["Pooja Patel", "Yoga Session", "4:00 PM", "Confirmed"],
-            ]}
-          />
-        </TableCard>
+            <div className="mt-4">
+              <Panel
+                title={DASHBOARD_LABELS.MODULES_TITLE}
+                subtitle={DASHBOARD_LABELS.MODULES_SUBTITLE}
+                right={
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                    {DASHBOARD_LABELS.LABEL_ROLE}: {role || "user"}
+                  </span>
+                }
+              >
+                <ModuleGrid modules={modules} />
+              </Panel>
+            </div>
+          </div>
 
-        <TableCard
-          title="Today's Product Sales"
-          filter={tableFilter}
-          onChange={setTableFilter}
-        >
-          <SimpleTable
-            headers={["Product", "Category", "Qty", "Amount"]}
-            rows={[
-              ["Diet Guide", "Nutrition", "2", "₹1,200"],
-              ["Meditation Pack", "Wellness", "1", "₹499"],
-              ["Prenatal Kit", "Parental", "1", "₹2,999"],
-            ]}
-          />
-        </TableCard>
-      </div>
-
-      {/* TABLES ROW 2 (🔥 NEW) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <TableCard
-          title="Wellness / Mindfulness Sessions"
-          filter={tableFilter}
-          onChange={setTableFilter}
-        >
-          <SimpleTable
-            headers={["Session", "Expert", "Date", "Status"]}
-            rows={[
-              ["Pregnancy Yoga", "Dr. Meera", "Today", "Live"],
-              ["Breathing Workshop", "Aarav Jain", "Tomorrow", "Scheduled"],
-              ["Meditation", "Anjali Desai", "Yesterday", "Completed"],
-            ]}
-          />
-        </TableCard>
-
-        <TableCard
-          title="Contact Requests"
-          filter={tableFilter}
-          onChange={setTableFilter}
-        >
-          <SimpleTable
-            headers={["Name", "Mobile", "Subject", "Status"]}
-            rows={[
-              ["Ritika", "98XXXX321", "Session Inquiry", "New"],
-              ["Amit", "97XXXX654", "Product Info", "Replied"],
-              ["Sneha", "99XXXX112", "Appointment", "Pending"],
-            ]}
-          />
-        </TableCard>
-      </div>
-    </div>
-  );
-}
-
-/* ================= COMPONENTS ================= */
-
-function Kpi({ title, value, icon }) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl p-6 shadow-xl bg-gradient-to-br from-purple-600 via-pink-500 to-rose-400 text-white">
-      <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-white/10 rounded-full" />
-      <div className="flex justify-between items-center relative z-10">
-        <div>
-          <p className="text-sm opacity-90">{title}</p>
-          <h3 className="text-3xl font-bold mt-1">{value}</h3>
-        </div>
-        <div className="bg-white/20 p-3 rounded-xl">{icon}</div>
-      </div>
-    </div>
-  );
-}
-function Card({ title, filter, onChange, children }) {
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-purple-100 hover:shadow-xl transition">
-      <Header title={title} filter={filter} onChange={onChange} />
-      {children}
-    </div>
-  );
-}
-
-function TableCard({ title, filter, onChange, children }) {
-  return (
-    <div className="bg-white rounded-2xl shadow p-6 border border-purple-100">
-      <Header title={title} filter={filter} onChange={onChange} showViewAll />
-      {children}
-    </div>
-  );
-}
-
-function Header({ title, filter, onChange, showViewAll }) {
-  return (
-    <div className="flex justify-between items-center mb-5">
-      <h2 className="font-semibold text-purple-800 text-lg">{title}</h2>
-      <div className="flex gap-3">
-        <select
-          value={filter}
-          onChange={(e) => onChange(e.target.value)}
-          className="rounded-lg border border-purple-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-        >
-          {FILTERS.map((f) => (
-            <option key={f}>{f}</option>
-          ))}
-        </select>
-        {showViewAll && (
-          <button className="text-sm font-medium text-purple-600 hover:text-pink-500 transition">
-            View All →
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ChartFix({ children }) {
-  return (
-    <div className="w-full min-h-[280px]">
-      <ResponsiveContainer width="100%" height="100%">
-        {children}
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function SimpleTable({ headers, rows }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-separate border-spacing-y-2">
-        <thead>
-          <tr className="text-left text-purple-700">
-            {headers.map((h) => (
-              <th key={h} className="pb-2 font-semibold">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr
-              key={i}
-              className="bg-purple-50 hover:bg-purple-100 transition rounded-lg"
+          <div className="lg:col-span-3 space-y-4">
+            <Panel
+              title={DASHBOARD_LABELS.RECENT_ACTIVITY_TITLE}
+              subtitle={DASHBOARD_LABELS.RECENT_ACTIVITY_SUBTITLE}
+              right={
+                <span className="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                  {DASHBOARD_LABELS.BADGE_LIVE}
+                </span>
+              }
             >
-              {r.map((c, j) => (
-                <td key={j} className="py-3 px-2">
-                  {renderCell(c)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              <ActivityFeed items={dashboard.activity} />
+            </Panel>
+
+            <Panel
+              title={DASHBOARD_LABELS.ENQUIRIES_QUEUE_TITLE}
+              subtitle={DASHBOARD_LABELS.ENQUIRIES_QUEUE_SUBTITLE}
+              right={
+                <span className="inline-flex items-center gap-2 rounded-xl bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 ring-1 ring-cyan-100">
+                  {DASHBOARD_LABELS.BADGE_CRM}
+                </span>
+              }
+            >
+              {canSeeEnquiries ? (
+                <QueueTable
+                  columns={[
+                    { key: "name", label: "Name" },
+                    { key: "subject", label: "Subject" },
+                    { key: "status", label: "Status", type: "status" },
+                  ]}
+                  rows={dashboard.queues.enquiries}
+                />
+              ) : (
+                <LockedNotice />
+              )}
+            </Panel>
+
+            <Panel
+              title={DASHBOARD_LABELS.APPOINTMENTS_QUEUE_TITLE}
+              subtitle={DASHBOARD_LABELS.APPOINTMENTS_QUEUE_SUBTITLE}
+              right={
+                <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                  {DASHBOARD_LABELS.BADGE_OPS}
+                </span>
+              }
+            >
+              {canSeeAppointments ? (
+                <QueueTable
+                  columns={[
+                    { key: "customer", label: "Customer" },
+                    { key: "service", label: "Service" },
+                    { key: "when", label: "When", mono: true },
+                    { key: "status", label: "Status", type: "status" },
+                  ]}
+                  rows={dashboard.queues.appointments}
+                />
+              ) : (
+                <LockedNotice />
+              )}
+            </Panel>
+          </div>
+        </div>
+
+        {canSeeOutlets ? (
+          <div className="mt-4">
+            <Panel
+              title={DASHBOARD_LABELS.OUTLET_REPORTS_TITLE}
+              subtitle={DASHBOARD_LABELS.OUTLET_REPORTS_SUBTITLE}
+              right={
+                <span className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                  {role === ROLES.SUBADMIN
+                    ? DASHBOARD_LABELS.LABEL_MY_OUTLET
+                    : DASHBOARD_LABELS.LABEL_ALL_OUTLETS}
+                </span>
+              }
+            >
+              <QueueTable
+                columns={[
+                  { key: "name", label: "Outlet" },
+                  { key: "city", label: "City" },
+                  { key: "customers", label: "Customers" },
+                  { key: "appointments", label: "Appointments" },
+                  { key: "sessions", label: "Sessions" },
+                  { key: "enquiries", label: "Enquiries" },
+                  { key: "trendPct", label: "Trend" },
+                ]}
+                rows={dashboard.outlets || []}
+              />
+            </Panel>
+          </div>
+        ) : null}
+
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Panel
+            title={DASHBOARD_LABELS.PANEL_GROWTH}
+            subtitle={DASHBOARD_LABELS.PANEL_GROWTH_SUBTITLE}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <StatRow
+                label={DASHBOARD_LABELS.STAT_CUSTOMERS}
+                value={dashboard.metrics.users.current}
+                icon={<Users className="h-4 w-4" />}
+              />
+              <StatRow
+                label={DASHBOARD_LABELS.STAT_APPOINTMENTS}
+                value={dashboard.metrics.appointments.current}
+                icon={<Calendar className="h-4 w-4" />}
+              />
+              <StatRow
+                label={DASHBOARD_LABELS.STAT_SESSIONS}
+                value={dashboard.metrics.sessions.current}
+                icon={<Activity className="h-4 w-4" />}
+              />
+              <StatRow
+                label={DASHBOARD_LABELS.STAT_ENQUIRIES}
+                value={dashboard.metrics.enquiries.current}
+                icon={<MessageSquareText className="h-4 w-4" />}
+              />
+            </div>
+          </Panel>
+
+          <Panel
+            title={DASHBOARD_LABELS.PANEL_PUBLISHING}
+            subtitle={DASHBOARD_LABELS.PANEL_PUBLISHING_SUBTITLE}
+          >
+            {canSeeContent ? (
+              <div className="space-y-3">
+                <PublishLine label={DASHBOARD_LABELS.PUBLISH_TIPS} value={8} />
+                <PublishLine
+                  label={DASHBOARD_LABELS.PUBLISH_TRIMESTER_PLANS}
+                  value={4}
+                />
+                <PublishLine
+                  label={DASHBOARD_LABELS.PUBLISH_NUTRITION_PLANS}
+                  value={5}
+                />
+                <PublishLine
+                  label={DASHBOARD_LABELS.PUBLISH_MEAL_PLANS}
+                  value={4}
+                />
+              </div>
+            ) : (
+              <LockedNotice />
+            )}
+          </Panel>
+
+          <Panel
+            title={DASHBOARD_LABELS.PANEL_ACTIONS}
+            subtitle={DASHBOARD_LABELS.PANEL_ACTIONS_SUBTITLE}
+          >
+            <div className="grid grid-cols-1 gap-2">
+              <QuickAction
+                title={DASHBOARD_LABELS.ACTION_CREATE_CUSTOMER}
+                hint={DASHBOARD_LABELS.ACTION_CREATE_CUSTOMER_HINT}
+                enabled={canSeeUsers}
+              />
+              <QuickAction
+                title={DASHBOARD_LABELS.ACTION_ASSIGN_ENQUIRY}
+                hint={DASHBOARD_LABELS.ACTION_ASSIGN_ENQUIRY_HINT}
+                enabled={canSeeEnquiries}
+              />
+              <QuickAction
+                title={DASHBOARD_LABELS.ACTION_PUBLISH_TIP}
+                hint={DASHBOARD_LABELS.ACTION_PUBLISH_TIP_HINT}
+                enabled={canSeeContent}
+              />
+              <QuickAction
+                title={DASHBOARD_LABELS.ACTION_REVIEW_APPOINTMENTS}
+                hint={DASHBOARD_LABELS.ACTION_REVIEW_APPOINTMENTS_HINT}
+                enabled={canSeeAppointments}
+              />
+            </div>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }
 
-function renderCell(value) {
-  if (["Confirmed", "Live", "Completed"].includes(value)) {
-    return (
-      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-        {value}
-      </span>
-    );
-  }
+function getRole(user) {
+  if (!user?.role || typeof user.role !== "string") return "";
+  return user.role.toLowerCase();
+}
 
-  if (["Pending", "Scheduled", "New"].includes(value)) {
-    return (
-      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-        {value}
-      </span>
-    );
-  }
-  return value;
+function LockedNotice() {
+  return (
+    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+      <p className="text-sm font-semibold text-slate-800">Access restricted</p>
+      <p className="mt-1 text-xs text-slate-600">
+        Admin can define permissions for this role.
+      </p>
+    </div>
+  );
+}
+
+function StatRow({ label, value, icon }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-slate-600 truncate">{label}</p>
+        <p className="text-sm font-semibold text-slate-900 truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function PublishLine({ label, value }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+      <div className="flex items-center gap-2">
+        <div className="h-9 w-9 rounded-xl bg-rose-50 text-rose-700 ring-1 ring-rose-100 flex items-center justify-center">
+          <ClipboardList className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900 truncate">
+            {label}
+          </p>
+          <p className="text-xs text-slate-600">Published this {""}period</p>
+        </div>
+      </div>
+      <span className="text-sm font-semibold text-slate-900">{value}</span>
+    </div>
+  );
+}
+
+function QuickAction({ title, hint, enabled }) {
+  return (
+    <button
+      type="button"
+      disabled={!enabled}
+      className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+        enabled
+          ? "border-slate-200 bg-white hover:bg-slate-50"
+          : "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+      }`}
+    >
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-0.5 text-xs">{hint}</p>
+    </button>
+  );
 }

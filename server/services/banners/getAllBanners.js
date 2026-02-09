@@ -1,5 +1,6 @@
+const mongoose = require("mongoose");
 const Banner = require("../../models/Banner");
-const { pagination } = require("../../utils");
+const { pagination, validateObjectId } = require("../../utils");
 
 exports.getAllBanners = async (query) => {
   let {
@@ -7,6 +8,7 @@ exports.getAllBanners = async (query) => {
     limit,
     search,
     name,
+    categoryId,
     isActive,
     fromDate,
     toDate,
@@ -18,6 +20,10 @@ exports.getAllBanners = async (query) => {
   const match = { isDeleted: false };
   if (typeof isActive !== "undefined") {
     match.isActive = isActive === "true" || isActive === true;
+  }
+  if (categoryId) {
+    validateObjectId(categoryId, "Category Id");
+    match.categoryId = mongoose.Types.ObjectId(categoryId);
   }
   if (name) match.name = { $regex: new RegExp(name, "i") };
   if (search) {
@@ -37,6 +43,20 @@ exports.getAllBanners = async (query) => {
   }
   const pipeline = [{ $match: match }];
   pipeline.push({
+    $lookup: {
+      from: "categories",
+      localField: "categoryId",
+      foreignField: "_id",
+      as: "category",
+    },
+  });
+  pipeline.push({
+    $unwind: {
+      path: "$category",
+      preserveNullAndEmptyArrays: true,
+    },
+  });
+  pipeline.push({
     $project: {
       name: 1,
       description: 1,
@@ -44,6 +64,13 @@ exports.getAllBanners = async (query) => {
       video: 1,
       isActive: 1,
       createdAt: 1,
+      category: {
+        _id: 1,
+        name: 1,
+        description: 1,
+        isActive: 1,
+        createdAt: 1,
+      },
     },
   });
   const sortStage = {};

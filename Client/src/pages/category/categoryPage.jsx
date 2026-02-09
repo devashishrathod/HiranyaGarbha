@@ -38,7 +38,7 @@ export const CategoryPage = () => {
   console.log(categoryData, "category data from category page");
 
   const { mutate: deleteCategory, isLoading: isDeleting } = useDeleteMutation(
-    API_ENDPOINTS.CATEGORIES.DELETE.replace(":id", "{id}"),
+    API_ENDPOINTS.CATEGORIES.DELETE,
   );
 
   useEffect(() => {

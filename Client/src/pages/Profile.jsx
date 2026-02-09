@@ -5,6 +5,7 @@ import API_ENDPOINTS from "../api/apiEndpoint";
 import { usePutMutation } from "../api/apiCall";
 import useAuth from "../hooks/useAuth";
 import { updateProfile } from "../store/auth/authSlice";
+// import formatGrammer from "../utils/formatGrammer";
 
 export const Profile = () => {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ export const Profile = () => {
         queryClient.invalidateQueries(["userProfile"]);
         setIsEditing(false);
       },
-    }
+    },
   );
 
   const handleChange = (e) => {
@@ -95,7 +96,7 @@ export const Profile = () => {
                 )}
               </div>
               <div className="ml-4 text-white">
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-2xl font-bold capitalize">
                   {userData?.name || "User"}
                 </h2>
                 <p className="text-indigo-100 capitalize">

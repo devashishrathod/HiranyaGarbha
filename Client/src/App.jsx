@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 import store from "./store/store";
 
 const LoadingFallback = () => (
@@ -19,6 +20,7 @@ const LoadingFallback = () => (
 );
 
 import MainLayout from "./components/Layout/MainLayout";
+import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { TrimesterPage } from "./pages/pregnancyTrimester/trimesterPage";
 import { TrimesterAddEdit } from "./pages/pregnancyTrimester/trimesterAddEdit";
 import { NutritionPlanPage } from "./pages/nutritions/nutritionPlanPage";
@@ -87,6 +89,13 @@ const CategoryAddEdit = lazy(() =>
   })),
 );
 
+/* ===================== GALLERY ===================== */
+const GalleryPage = lazy(() =>
+  import("./pages/gallery/GalleryPage").then((m) => ({
+    default: m.GalleryPage,
+  })),
+);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -100,6 +109,7 @@ const App = () => {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
+        <Toaster position="top-right" />
         <Router>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -157,6 +167,27 @@ const App = () => {
                   path="/meal-plans/update/:id"
                   element={<MealPlanAddEdit />}
                 />
+                <Route
+                  path="/products"
+                  element={<PlaceholderPage title="Products" />}
+                />
+                <Route
+                  path="/contact-inquiries"
+                  element={<PlaceholderPage title="Contact Inquiries" />}
+                />
+                <Route
+                  path="/wellness-mindfulness"
+                  element={<PlaceholderPage title="Wellness & Mindfulness" />}
+                />
+                <Route
+                  path="/privacies"
+                  element={<PlaceholderPage title="Privacy & Policies" />}
+                />
+                <Route
+                  path="/terms"
+                  element={<PlaceholderPage title="Terms & Conditions" />}
+                />
+                <Route path="/gallery" element={<GalleryPage />} />
                 {/* Default redirect to dashboard */}
                 <Route
                   path="/"
