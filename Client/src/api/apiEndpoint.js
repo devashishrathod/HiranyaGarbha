@@ -17,6 +17,13 @@ const API_ENDPOINTS = {
     GET_ALL: "/categories/getAll",
     GET_ONE: "/categories/get/:id",
   },
+  SUBCATEGORIES: {
+    CREATE: "/subCategories/:categoryId/create",
+    UPDATE: "/subCategories/update/:id",
+    DELETE: "/subCategories/delete/:id",
+    GET_ALL: "/subCategories/getAll",
+    GET_ONE: "/subCategories/get/:id",
+  },
   BANNERS: {
     CREATE: "/banners/create",
     UPDATE: "/banners/update/:id",

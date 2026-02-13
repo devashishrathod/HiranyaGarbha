@@ -14,7 +14,7 @@ const Sidebar = () => {
     users:
       "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
     categories: "M19 11H5m14-4H5m14 8H5m14-4H5",
-    //subcategories: "M4 6h16M4 10h16M4 14h16M4 18h16",
+    subcategories: "M4 6h16M4 10h16M4 14h16M4 18h16",
     products: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
     enquiries:
       "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
@@ -81,12 +81,12 @@ const Sidebar = () => {
             icon: icons.categories,
             color: "text-orange-500",
           },
-          // {
-          //   name: "Subcategories",
-          //   path: "/subcategories",
-          //   icon: icons.subcategories,
-          //   color: "text-red-500",
-          // },
+          {
+            name: "Subcategories",
+            path: "/subcategories",
+            icon: icons.subcategories,
+            color: "text-red-500",
+          },
           {
             name: "Prenatal Care Services",
             path: "/prenatal-cares",

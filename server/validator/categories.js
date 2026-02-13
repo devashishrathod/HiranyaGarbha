@@ -1,5 +1,4 @@
 const Joi = require("joi");
-const { CATEGORY_TYPES } = require("../constants");
 
 exports.validateCreateCategory = (data) => {
   const createSchema = Joi.object({
@@ -7,9 +6,7 @@ exports.validateCreateCategory = (data) => {
       "string.min": "Name has minimum {#limit} characters",
       "string.max": "Name cannot exceed {#limit} characters",
     }),
-    type: Joi.string()
-      .valid(...Object.values(CATEGORY_TYPES))
-      .optional(),
+    type: Joi.string().optional(),
     description: Joi.string().allow("").max(300).messages({
       "string.max": "Description cannot exceed {#limit} characters",
     }),
@@ -27,10 +24,9 @@ exports.validateUpdateCategory = (payload) => {
     description: Joi.string().allow("").max(300).messages({
       "string.max": "Description cannot exceed {#limit} characters",
     }),
-    type: Joi.string()
-      .valid(...Object.values(CATEGORY_TYPES))
-      .optional(),
+    type: Joi.string().optional(),
     isActive: Joi.boolean().optional(),
+    removeImage: Joi.boolean().optional(),
   });
   return updateSchema.validate(payload, { abortEarly: false });
 };
@@ -41,9 +37,7 @@ exports.validateGetAllCategoriesQuery = (payload) => {
     limit: Joi.number().integer().min(1).optional(),
     search: Joi.string().optional(),
     name: Joi.string().optional(),
-    type: Joi.string()
-      .valid(...Object.values(CATEGORY_TYPES))
-      .optional(),
+    type: Joi.string().optional(),
     isActive: Joi.alternatives().try(Joi.string(), Joi.boolean()).optional(),
     fromDate: Joi.date().iso().optional(),
     toDate: Joi.date().iso().optional(),

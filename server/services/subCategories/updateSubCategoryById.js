@@ -10,7 +10,7 @@ exports.updateSubCategoryById = async (id, payload, image) => {
     throwError(404, "SubCategory not found");
   }
   if (payload) {
-    let { name, description, categoryId, isActive } = payload;
+    let { name, description, categoryId, isActive, removeImage } = payload;
     let category;
     if (categoryId) {
       validateObjectId(categoryId, "Category Id");
@@ -31,7 +31,7 @@ exports.updateSubCategoryById = async (id, payload, image) => {
       if (existingSubCategorywithCategory) {
         throwError(
           400,
-          `Another Subcategory exists with this name for same category`
+          `Another Subcategory exists with this name for same category`,
         );
       }
       subcategory.name = name;
@@ -46,14 +46,19 @@ exports.updateSubCategoryById = async (id, payload, image) => {
       if (existingSubCategorywithCategory) {
         throwError(
           400,
-          `Another Subcategory exists with this name for ${category.name}`
+          `Another Subcategory exists with this name for ${category.name}`,
         );
       }
     }
     if (typeof isActive !== "undefined") {
-      subcategory.isActive = !subcategory.isActive;
+      subcategory.isActive = isActive === "true" || isActive === true;
     }
     if (description) subcategory.description = description?.toLowerCase() || "";
+
+    if (removeImage === true || removeImage === "true") {
+      if (subcategory.image) await deleteImage(subcategory.image);
+      subcategory.image = "";
+    }
   }
   if (image) {
     if (subcategory.image) await deleteImage(subcategory.image);

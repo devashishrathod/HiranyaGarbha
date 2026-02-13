@@ -1,12 +1,13 @@
 import formatGrammer from "../../utils/formatGrammer";
 
-export const CategoryView = ({ category, onClose }) => {
-  if (!category) return null;
+export const SubCategoryView = ({ subCategory, onClose }) => {
+  if (!subCategory) return null;
+
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Category Details</h2>
+          <h2 className="text-xl font-bold">Subcategory Details</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -27,48 +28,49 @@ export const CategoryView = ({ category, onClose }) => {
             </svg>
           </button>
         </div>
+
         <div className="space-y-4">
-          {/* Image */}
-          {category.image && (
+          {subCategory.image ? (
             <div className="flex flex-col items-center">
               <img
-                src={category.image}
-                alt={category.name}
+                src={subCategory.image}
+                alt={subCategory.name}
                 className="max-h-48 object-contain rounded"
               />
             </div>
-          )}
-          {/* Title */}
+          ) : null}
+
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Title</h3>
-            <p className="mt-1">{formatGrammer(category.name)}</p>
+            <h3 className="text-sm font-medium text-gray-500">Name</h3>
+            <p className="mt-1">{formatGrammer(subCategory.name)}</p>
           </div>
-          {/* Description */}
+
           <div>
             <h3 className="text-sm font-medium text-gray-500">Description</h3>
             <p className="mt-1">
-              {formatGrammer(category.description) || "No description provided"}
+              {formatGrammer(subCategory.description) || "No description provided"}
             </p>
           </div>
-          {/* Created At */}
+
           <div>
             <h3 className="text-sm font-medium text-gray-500">Created At</h3>
             <p className="mt-1">
-              {category?.createdAt
-                ? new Date(category.createdAt).toLocaleString()
+              {subCategory?.createdAt
+                ? new Date(subCategory.createdAt).toLocaleString()
                 : "N/A"}
             </p>
           </div>
-          {/* Updated At */}
+
           <div>
             <h3 className="text-sm font-medium text-gray-500">Updated At</h3>
             <p className="mt-1">
-              {category?.updatedAt
-                ? new Date(category.updatedAt).toLocaleString()
+              {subCategory?.updatedAt
+                ? new Date(subCategory.updatedAt).toLocaleString()
                 : "N/A"}
             </p>
           </div>
         </div>
+
         <div className="mt-6">
           <button
             onClick={onClose}

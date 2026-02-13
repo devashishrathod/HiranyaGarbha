@@ -1,15 +1,11 @@
 const mongoose = require("mongoose");
-const { DEFAULT_IMAGES, CATEGORY_TYPES } = require("../constants");
+const { DEFAULT_IMAGES } = require("../constants");
 
 const categorySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
-    type: {
-      type: String,
-      enum: [...Object.values(CATEGORY_TYPES)],
-      default: CATEGORY_TYPES.PRODUCTS,
-    },
+    type: { type: String, trim: true },
     image: { type: String, default: DEFAULT_IMAGES.CATEGORY },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -18,7 +14,7 @@ const categorySchema = new mongoose.Schema(
 );
 
 categorySchema.index(
-  { name: 1, type: 1 },
+  { name: 1 },
   { unique: true, partialFilterExpression: { isDeleted: false } },
 );
 

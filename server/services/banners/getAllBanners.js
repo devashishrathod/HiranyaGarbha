@@ -8,7 +8,7 @@ exports.getAllBanners = async (query) => {
     limit,
     search,
     name,
-    categoryId,
+    subCategoryId,
     isActive,
     fromDate,
     toDate,
@@ -21,9 +21,9 @@ exports.getAllBanners = async (query) => {
   if (typeof isActive !== "undefined") {
     match.isActive = isActive === "true" || isActive === true;
   }
-  if (categoryId) {
-    validateObjectId(categoryId, "Category Id");
-    match.categoryId = mongoose.Types.ObjectId(categoryId);
+  if (subCategoryId) {
+    validateObjectId(subCategoryId, "SubCategory Id");
+    match.subCategoryId = mongoose.Types.ObjectId(subCategoryId);
   }
   if (name) match.name = { $regex: new RegExp(name, "i") };
   if (search) {
@@ -44,8 +44,22 @@ exports.getAllBanners = async (query) => {
   const pipeline = [{ $match: match }];
   pipeline.push({
     $lookup: {
+      from: "subcategories",
+      localField: "subCategoryId",
+      foreignField: "_id",
+      as: "subCategory",
+    },
+  });
+  pipeline.push({
+    $unwind: {
+      path: "$subCategory",
+      preserveNullAndEmptyArrays: true,
+    },
+  });
+  pipeline.push({
+    $lookup: {
       from: "categories",
-      localField: "categoryId",
+      localField: "subCategory.categoryId",
       foreignField: "_id",
       as: "category",
     },
@@ -64,6 +78,14 @@ exports.getAllBanners = async (query) => {
       video: 1,
       isActive: 1,
       createdAt: 1,
+      subCategory: {
+        _id: 1,
+        name: 1,
+        description: 1,
+        categoryId: 1,
+        isActive: 1,
+        createdAt: 1,
+      },
       category: {
         _id: 1,
         name: 1,

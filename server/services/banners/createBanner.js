@@ -3,8 +3,8 @@ const { throwError, validateObjectId } = require("../../utils");
 const { uploadImage, uploadVideo } = require("../uploads");
 
 exports.createBanner = async (video, image, payload) => {
-  let { name, description, categoryId, isActive } = payload;
-  validateObjectId(categoryId, "Category ID");
+  let { name, description, subCategoryId, isActive } = payload;
+  validateObjectId(subCategoryId, "SubCategory ID");
   name = name?.toLowerCase();
   description = description?.toLowerCase();
   const existingBanner = await Banner.findOne({ name, isDeleted: false });
@@ -21,7 +21,7 @@ exports.createBanner = async (video, image, payload) => {
   return await Banner.create({
     name,
     description,
-    categoryId,
+    subCategoryId,
     image: imageUrl,
     video: videoUrl,
     isActive,

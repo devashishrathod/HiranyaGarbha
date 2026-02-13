@@ -9,11 +9,10 @@ exports.createCategory = async (payload, image) => {
   type = type?.toLowerCase();
   const existingCategory = await Category.findOne({
     name,
-    type,
     isDeleted: false,
   });
   if (existingCategory) {
-    throwError(400, `Category already exist with this name for ${type}`);
+    throwError(400, `Category already exist with this name`);
   }
   let imageUrl;
   if (image) imageUrl = await uploadImage(image.tempFilePath);

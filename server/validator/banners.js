@@ -10,8 +10,8 @@ exports.validateCreateBanner = (data) => {
     description: Joi.string().allow("").max(300).messages({
       "string.max": "Description cannot exceed {#limit} characters",
     }),
-    categoryId: objectId().required().messages({
-      "any.invalid": "Invalid categoryId format",
+    subCategoryId: objectId().required().messages({
+      "any.invalid": "Invalid subCategoryId format",
     }),
     isActive: Joi.boolean().optional(),
   });
@@ -27,8 +27,8 @@ exports.validateUpdateBanner = (data) => {
     description: Joi.string().allow("").max(300).optional().messages({
       "string.max": "Description cannot exceed {#limit} characters",
     }),
-    categoryId: objectId().optional().messages({
-      "any.invalid": "Invalid categoryId format",
+    subCategoryId: objectId().optional().messages({
+      "any.invalid": "Invalid subCategoryId format",
     }),
     isActive: Joi.boolean().optional(),
     removeImage: Joi.boolean().optional(),
@@ -43,8 +43,8 @@ exports.validateGetAllBannersQuery = (payload) => {
     limit: Joi.number().integer().min(1).optional(),
     search: Joi.string().optional(),
     name: Joi.string().optional(),
-    categoryId: objectId().messages({
-      "any.invalid": "Invalid categoryId format",
+    subCategoryId: objectId().messages({
+      "any.invalid": "Invalid subCategoryId format",
     }),
     isActive: Joi.alternatives().try(Joi.string(), Joi.boolean()).optional(),
     fromDate: Joi.date().iso().optional(),

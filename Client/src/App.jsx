@@ -89,6 +89,18 @@ const CategoryAddEdit = lazy(() =>
   })),
 );
 
+/* ===================== SUBCATEGORY ===================== */
+const SubCategoryPage = lazy(() =>
+  import("./pages/subcategory/subCategoryPage").then((m) => ({
+    default: m.SubCategoryPage,
+  })),
+);
+const SubCategoryAddEdit = lazy(() =>
+  import("./pages/subcategory/SubCategoryAddEdit").then((m) => ({
+    default: m.SubCategoryAddEdit,
+  })),
+);
+
 /* ===================== GALLERY ===================== */
 const GalleryPage = lazy(() =>
   import("./pages/gallery/GalleryPage").then((m) => ({
@@ -127,6 +139,15 @@ const App = () => {
                 <Route
                   path="/category/update/:id"
                   element={<CategoryAddEdit />}
+                />
+                <Route path="/subcategories" element={<SubCategoryPage />} />
+                <Route
+                  path="/subcategories/add"
+                  element={<SubCategoryAddEdit />}
+                />
+                <Route
+                  path="/subcategories/update/:id"
+                  element={<SubCategoryAddEdit />}
                 />
                 <Route path="/tips" element={<TipsPage />} />
                 <Route path="/tips/add" element={<TipsAddEdit />} />

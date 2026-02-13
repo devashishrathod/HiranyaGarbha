@@ -28,6 +28,7 @@ exports.validateUpdateSubCategory = (payload) => {
       "any.invalid": "Invalid categoryId format",
     }),
     isActive: Joi.boolean().optional(),
+    removeImage: Joi.boolean().optional(),
   });
   return updateSchema.validate(payload, { abortEarly: false });
 };

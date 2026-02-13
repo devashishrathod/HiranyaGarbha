@@ -12,11 +12,11 @@ exports.updateBanner = async (id, video, image, payload) => {
   validateObjectId(id, "Banner ID");
   const banner = await Banner.findOne({ _id: id, isDeleted: false });
   if (!banner) throwError(404, "Banner not found");
-  let { name, description, categoryId, isActive, removeImage, removeVideo } =
+  let { name, description, subCategoryId, isActive, removeImage, removeVideo } =
     payload;
-  if (typeof categoryId !== "undefined") {
-    validateObjectId(categoryId, "Category ID");
-    banner.categoryId = categoryId;
+  if (typeof subCategoryId !== "undefined") {
+    validateObjectId(subCategoryId, "SubCategory ID");
+    banner.subCategoryId = subCategoryId;
   }
   if (typeof name !== "undefined") {
     name = name?.toLowerCase();

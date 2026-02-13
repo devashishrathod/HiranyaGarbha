@@ -9,21 +9,20 @@ exports.updateCategoryById = async (id, payload = {}, image) => {
     throwError(404, "Category not found");
   }
   if (payload && Object.keys(payload).length) {
-    let { name, type, description, isActive } = payload;
+    let { name, type, description, isActive, removeImage } = payload;
     const updatedName = name ? name.toLowerCase().trim() : category.name;
     const updatedType = type ?? category.type;
     const isNameChanged = name && updatedName !== category.name;
     const isTypeChanged =
       typeof type !== "undefined" && updatedType !== category.type;
-    if (isNameChanged || isTypeChanged) {
+    if (isNameChanged) {
       const conflict = await Category.findOne({
         _id: { $ne: id },
         name: updatedName,
-        type: updatedType,
         isDeleted: false,
       });
       if (conflict) {
-        throwError(400, "Category already exists with this name and type");
+        throwError(400, "Category already exists with this name");
       }
     }
     if (isNameChanged) category.name = updatedName;
@@ -32,6 +31,11 @@ exports.updateCategoryById = async (id, payload = {}, image) => {
       category.description = description?.toLowerCase();
     }
     if (typeof isActive !== "undefined") category.isActive = isActive;
+
+    if (removeImage === true || removeImage === "true") {
+      if (category.image) await deleteImage(category.image);
+      category.image = "";
+    }
   }
   if (image) {
     if (category.image) await deleteImage(category.image);

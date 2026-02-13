@@ -1,31 +1,64 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  usePostMutation,
-  useGetQuery,
-  usePutMutation,
-} from "../../api/apiCall";
-import API_ENDPOINTS from "../../api/apiEndpoint";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import Loader from "../../components/UI/Loader";
+import { useMutation } from "@tanstack/react-query";
 
-export const CategoryAddEdit = () => {
+import Loader from "../../components/UI/Loader";
+import { useGetQuery, usePutMutation } from "../../api/apiCall";
+import API_ENDPOINTS from "../../api/apiEndpoint";
+import axiosInstance from "../../api/axiosInstance";
+
+const getApiMessage = (res, fallback) => {
+  return res?.message || res?.data?.message || fallback;
+};
+
+export const SubCategoryAddEdit = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const navigate = useNavigate();
+
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    categoryId: "",
   });
 
   const [previewImage, setPreviewImage] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [removeExistingImage, setRemoveExistingImage] = useState(false);
 
-  const { mutate: addCategory, isPending: isAdding } = usePostMutation(
-    API_ENDPOINTS.CATEGORIES.CREATE,
+  const { data: categoriesData } = useGetQuery(
+    `${API_ENDPOINTS.CATEGORIES.GET_ALL}?page=1&limit=1000`,
+    ["categories", "all"],
+  );
+
+  const categories = useMemo(() => {
+    const arr = categoriesData?.data?.data || categoriesData?.data || [];
+    return Array.isArray(arr) ? arr : [];
+  }, [categoriesData]);
+
+  const createMutation = useMutation({
+    mutationFn: async ({ categoryId, data }) => {
+      const endpoint = API_ENDPOINTS.SUBCATEGORIES.CREATE.replace(
+        ":categoryId",
+        categoryId,
+      );
+      const response = await axiosInstance.post(endpoint, data, {
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 1),
+          );
+          setUploadProgress(progress);
+        },
+      });
+      return response.data;
+    },
+  });
+
+  const { mutate: updateSubCategory, isPending: isUpdating } = usePutMutation(
+    API_ENDPOINTS.SUBCATEGORIES.UPDATE.replace(":id", id || ""),
     {
       onUploadProgress: (progressEvent) => {
         const progress = Math.round(
@@ -33,26 +66,12 @@ export const CategoryAddEdit = () => {
         );
         setUploadProgress(progress);
       },
+      toastOnError: false,
     },
   );
 
-  const { mutate: updateCategory, isPending: isUpdating } = usePutMutation(
-    `${API_ENDPOINTS.CATEGORIES.UPDATE.replace(":id", id)}`,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress: (progressEvent) => {
-        const progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total || 1),
-        );
-        setUploadProgress(progress);
-      },
-    },
-  );
-
-  const { data: categoryData, isLoading: isFetchingCategory } = useGetQuery(
-    isEditMode
-      ? `${API_ENDPOINTS.CATEGORIES.GET_ONE.replace(":id", id)}`
-      : null,
+  const { data: subCategoryData, isLoading: isFetching } = useGetQuery(
+    isEditMode ? API_ENDPOINTS.SUBCATEGORIES.GET_ONE.replace(":id", id) : null,
     {
       enabled: isEditMode,
       refetchOnWindowFocus: false,
@@ -62,86 +81,43 @@ export const CategoryAddEdit = () => {
   );
 
   useEffect(() => {
-    if (isEditMode && categoryData) {
-      const category = categoryData.result || categoryData.data || categoryData;
-      if (category) {
-        setFormData({
-          name: category.name || "",
-          description: category.description || "",
-        });
-        if (category.image) {
-          const imageUrl = category.image.startsWith("http")
-            ? category.image
-            : `${process.env.REACT_APP_API_BASE_URL || ""}${category.image}`;
-          setPreviewImage(imageUrl);
-        } else {
-          setPreviewImage(null);
-        }
-        setRemoveExistingImage(false);
-      } else {
-        toast.error("Failed to load category data");
-      }
-    }
-  }, [isEditMode, categoryData]);
+    if (!isEditMode) return;
+    if (!subCategoryData) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    const formDataToSend = new FormData();
-    formDataToSend.append("name", formData.name.trim());
-    formDataToSend.append("description", formData.description.trim());
-    if (formData.image) {
-      formDataToSend.append("image", formData.image);
-    }
-    if (isEditMode && removeExistingImage && !formData.image) {
-      formDataToSend.append("removeImage", "true");
-    }
-    setUploadProgress(0);
-    const onSuccess = (response) => {
-      console.log("Success response:", response);
-      setFormData({ name: "", description: "", image: "" });
-      setPreviewImage(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setUploadProgress(0);
-      toast.success(
-        isEditMode
-          ? "Category updated successfully!"
-          : "Category added successfully!",
-      );
-      setTimeout(() => navigate("/category"), 1000);
-    };
-    const onError = (error) => {
-      console.error("API Error:", error);
-      const errorMessage =
-        error.response?.data?.message || error.message || "Operation failed";
-      toast.error(errorMessage);
-      setUploadProgress(0);
-    };
-    try {
-      if (isEditMode) {
-        updateCategory(formDataToSend, { onSuccess, onError });
-      } else {
-        addCategory(formDataToSend, { onSuccess, onError });
+    const sub =
+      subCategoryData?.data || subCategoryData?.result || subCategoryData;
+    if (!sub) return;
+
+    setFormData({
+      name: sub.name || "",
+      description: sub.description || "",
+      categoryId: sub.categoryId || "",
+    });
+
+    if (sub.image) setPreviewImage(sub.image);
+    else setPreviewImage(null);
+    setRemoveExistingImage(false);
+  }, [isEditMode, subCategoryData]);
+
+  useEffect(() => {
+    return () => {
+      if (previewImage && previewImage.startsWith("blob:")) {
+        URL.revokeObjectURL(previewImage);
       }
-    } catch (error) {
-      console.error("Submission Error:", error);
-      toast.error("An unexpected error occurred");
-      setUploadProgress(0);
-    }
-  };
+    };
+  }, [previewImage]);
+
+  const isLoading = createMutation.isPending || isUpdating;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) {
-      setFormData({ ...formData, image: "" });
+      setFormData((prev) => ({ ...prev, image: "" }));
       setPreviewImage(null);
       return;
     }
 
-    setFormData({ ...formData, image: file });
+    setFormData((prev) => ({ ...prev, image: file }));
     if (previewImage && previewImage.startsWith("blob:")) {
       URL.revokeObjectURL(previewImage);
     }
@@ -153,65 +129,131 @@ export const CategoryAddEdit = () => {
     if (previewImage && previewImage.startsWith("blob:")) {
       URL.revokeObjectURL(previewImage);
     }
-    setFormData({ ...formData, image: "" });
+    setFormData((prev) => ({ ...prev, image: "" }));
     setPreviewImage(null);
     if (isEditMode) setRemoveExistingImage(true);
     toast.info("Image removed");
   };
 
-  useEffect(() => {
-    return () => {
-      if (previewImage && previewImage.startsWith("blob:")) {
-        URL.revokeObjectURL(previewImage);
-      }
-    };
-  }, [previewImage]);
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-  if (isEditMode && isFetchingCategory) {
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!formData.categoryId) {
+      toast.error("Category is required");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("name", formData.name.trim());
+    fd.append("description", formData.description.trim());
+    if (formData.image) fd.append("image", formData.image);
+    if (isEditMode && removeExistingImage && !formData.image) {
+      fd.append("removeImage", "true");
+    }
+
+    setUploadProgress(0);
+
+    const onSuccess = (res) => {
+      toast.success(
+        getApiMessage(
+          res,
+          isEditMode
+            ? "Subcategory updated successfully"
+            : "Subcategory created successfully",
+        ),
+      );
+      setTimeout(() => navigate("/subcategories"), 700);
+    };
+
+    const onError = (err) => {
+      const msg =
+        err?.response?.data?.message || err?.message || "Operation failed";
+      toast.error(msg);
+      setUploadProgress(0);
+    };
+
+    if (isEditMode) {
+      updateSubCategory(fd, { onSuccess, onError });
+      return;
+    }
+
+    createMutation.mutate(
+      { categoryId: formData.categoryId, data: fd },
+      { onSuccess, onError },
+    );
+  };
+
+  if (isEditMode && isFetching) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <Loader size={100} color="#3B82F6" />
-          <p className="mt-4 text-gray-600">Loading category data...</p>
+          <p className="mt-4 text-gray-600">Loading subcategory data...</p>
         </div>
       </div>
     );
   }
-
-  const isLoading = isAdding || isUpdating;
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <div className="bg-white shadow-lg rounded-lg p-6">
         <div className="flex justify-between items-center mb-6 pb-3 border-b">
           <h2 className="text-2xl font-bold text-gray-800">
-            {isEditMode ? "Edit Category" : "Add New Category"}
+            {isEditMode ? "Edit Subcategory" : "Add New Subcategory"}
           </h2>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title */}
           <div className="flex flex-col">
             <label htmlFor="name" className="mb-2 font-medium text-gray-700">
-              Title <span className="text-red-500">*</span>
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
               type="text"
-              placeholder="Enter category name"
+              placeholder="Enter subcategory name"
               value={formData.name}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
               className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               required
               maxLength={100}
+              disabled={isLoading}
             />
-            <span className="text-xs text-gray-500 mt-1">
-              {formData.name.length}/100 characters
-            </span>
           </div>
-          {/* Type */}
-          {/* Description */}
+
+          <div className="flex flex-col">
+            <label
+              htmlFor="categoryId"
+              className="mb-2 font-medium text-gray-700"
+            >
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="categoryId"
+              value={formData.categoryId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, categoryId: e.target.value }))
+              }
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              required
+              disabled={isLoading}
+            >
+              <option value="">Select category</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex flex-col">
             <label
               htmlFor="description"
@@ -221,23 +263,24 @@ export const CategoryAddEdit = () => {
             </label>
             <textarea
               id="description"
-              placeholder="Enter category description"
+              placeholder="Enter description"
               value={formData.description}
               onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
               }
               className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-vertical"
               rows="4"
               maxLength={500}
+              disabled={isLoading}
             />
-            <span className="text-xs text-gray-500 mt-1">
-              {formData.description.length}/500 characters
-            </span>
           </div>
-          {/* Image Upload */}
+
           <div className="flex flex-col">
             <label className="block mb-2 font-medium text-gray-700">
-              Category Image
+              Image
             </label>
             <div className="flex w-full rounded-lg overflow-hidden border border-gray-300 items-center">
               <label
@@ -253,6 +296,7 @@ export const CategoryAddEdit = () => {
                 className="hidden"
                 onChange={handleFileChange}
                 ref={fileInputRef}
+                disabled={isLoading}
               />
               <span className="px-3 text-sm text-gray-700 truncate flex-1">
                 {formData.image?.name ||
@@ -261,7 +305,8 @@ export const CategoryAddEdit = () => {
                     : "No file selected")}
               </span>
             </div>
-            {isLoading && uploadProgress > 0 && (
+
+            {isLoading && uploadProgress > 0 ? (
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
                 <div
                   className="bg-green-600 h-2.5 rounded-full transition-all duration-200"
@@ -271,8 +316,9 @@ export const CategoryAddEdit = () => {
                   Uploading... {uploadProgress}%
                 </p>
               </div>
-            )}
-            {previewImage && (
+            ) : null}
+
+            {previewImage ? (
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-medium text-gray-700">Preview:</p>
@@ -280,6 +326,7 @@ export const CategoryAddEdit = () => {
                     type="button"
                     onClick={handleRemoveImage}
                     className="text-red-500 hover:text-red-700 text-sm font-medium transition"
+                    disabled={isLoading}
                   >
                     Remove Image
                   </button>
@@ -287,58 +334,31 @@ export const CategoryAddEdit = () => {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex justify-center bg-gray-50">
                   <img
                     src={previewImage}
-                    alt="Category preview"
+                    alt="Subcategory preview"
                     className="max-h-48 w-auto object-contain rounded border"
                   />
                 </div>
-                {isEditMode && !formData.image && (
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    Current image
-                  </p>
-                )}
               </div>
-            )}
+            ) : null}
           </div>
-          {/* Actions */}
+
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50"
               disabled={isLoading || !formData.name.trim()}
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  {isEditMode ? "Updating..." : "Adding..."}
-                </span>
-              ) : isEditMode ? (
-                "Update Category"
-              ) : (
-                "Add Category"
-              )}
+              {isLoading
+                ? isEditMode
+                  ? "Updating..."
+                  : "Adding..."
+                : isEditMode
+                  ? "Update Subcategory"
+                  : "Add Subcategory"}
             </button>
             <button
               type="button"
-              onClick={() => navigate("/category")}
+              onClick={() => navigate("/subcategories")}
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-3 px-6 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
               disabled={isLoading}
             >

@@ -131,7 +131,7 @@ const BannerAddEditModal = ({
   onClose,
   mode,
   initial,
-  categories,
+  subCategories,
   onSubmit,
   isSubmitting,
 }) => {
@@ -159,7 +159,7 @@ const BannerAddEditModal = ({
     setForm({
       name: initial?.name || "",
       description: initial?.description || "",
-      categoryId: initial?.categoryId || initial?.category?._id || "",
+      subCategoryId: initial?.subCategoryId || initial?.subCategory?._id || "",
       isActive:
         typeof initial?.isActive === "boolean" ? initial.isActive : true,
       image: null,
@@ -236,15 +236,15 @@ const BannerAddEditModal = ({
       toast.error("Name is required");
       return;
     }
-    if (!form.categoryId) {
-      toast.error("Category is required");
+    if (!form.subCategoryId) {
+      toast.error("Subcategory is required");
       return;
     }
 
     const fd = new FormData();
     fd.append("name", form.name.trim());
     fd.append("description", form.description?.trim() || "");
-    fd.append("categoryId", form.categoryId);
+    fd.append("subCategoryId", form.subCategoryId);
     fd.append("isActive", String(form.isActive));
     if (form.image) fd.append("image", form.image);
     if (form.video) fd.append("video", form.video);
@@ -295,16 +295,16 @@ const BannerAddEditModal = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-700">
-                Category
+                Subcategory
               </label>
               <select
-                value={form.categoryId}
-                onChange={onChange("categoryId")}
+                value={form.subCategoryId}
+                onChange={onChange("subCategoryId")}
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
                 disabled={isSubmitting}
               >
-                <option value="">Select category</option>
-                {categories.map((c) => (
+                <option value="">Select subcategory</option>
+                {subCategories.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
                   </option>
@@ -518,7 +518,7 @@ export const GalleryPage = () => {
   ]);
 
   const { data: categoriesData } = useGetQuery(
-    `${API_ENDPOINTS.CATEGORIES.GET_ALL}?page=1&limit=1000&type=gallery`,
+    `${API_ENDPOINTS.CATEGORIES.GET_ALL}?page=1&limit=1000`,
     ["categories", "all"],
   );
 
@@ -526,6 +526,26 @@ export const GalleryPage = () => {
     const arr = categoriesData?.data?.data || categoriesData?.data || [];
     return Array.isArray(arr) ? arr : [];
   }, [categoriesData]);
+
+  const galleryCategoryId = useMemo(() => {
+    const galleryCat = categories.find(
+      (c) => (c?.name || "").toLowerCase() === "gallery",
+    );
+    return galleryCat?._id || "";
+  }, [categories]);
+
+  const { data: subCategoriesData } = useGetQuery(
+    galleryCategoryId
+      ? `${API_ENDPOINTS.SUBCATEGORIES.GET_ALL}?page=1&limit=1000&categoryId=${galleryCategoryId}`
+      : null,
+    ["subCategories", "gallery", galleryCategoryId],
+    { enabled: !!galleryCategoryId },
+  );
+
+  const subCategories = useMemo(() => {
+    const arr = subCategoriesData?.data?.data || subCategoriesData?.data || [];
+    return Array.isArray(arr) ? arr : [];
+  }, [subCategoriesData]);
 
   useEffect(() => {
     const paged = bannersData?.data;
@@ -675,10 +695,10 @@ export const GalleryPage = () => {
       },
       {
         key: "category",
-        title: "Category",
+        title: "Subcategory",
         render: (row) => (
           <span className="text-sm text-slate-700">
-            {row.category?.name || "-"}
+            {row.subCategory?.name || "-"}
           </span>
         ),
       },
@@ -833,7 +853,7 @@ export const GalleryPage = () => {
         open={editModal.open}
         mode={editModal.mode}
         initial={editModal.item}
-        categories={categories}
+        subCategories={subCategories}
         onClose={() =>
           setEditModal({ open: false, mode: "create", item: null })
         }
