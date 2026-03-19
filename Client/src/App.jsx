@@ -108,6 +108,12 @@ const GalleryPage = lazy(() =>
   })),
 );
 
+const GalleryDetails = lazy(() =>
+  import("./pages/gallery/GalleryDetails").then((m) => ({
+    default: m.GalleryDetails,
+  })),
+);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -209,6 +215,7 @@ const App = () => {
                   element={<PlaceholderPage title="Terms & Conditions" />}
                 />
                 <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/gallery/:id" element={<GalleryDetails />} />
                 {/* Default redirect to dashboard */}
                 <Route
                   path="/"

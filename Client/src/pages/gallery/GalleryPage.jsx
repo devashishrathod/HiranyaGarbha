@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { Eye, Minus, Plus } from "lucide-react";
+import { Eye, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
-import Table from "../../components/UI/Table";
 import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
-import Pagination from "../../components/UI/Pagination";
 
 import {
   useDeleteMutation,
@@ -15,6 +14,7 @@ import {
 } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import axiosInstance from "../../api/axiosInstance";
+import formatGrammer from "../../utils/formatGrammer";
 
 const getApiMessage = (res, fallback) => {
   return res?.message || res?.data?.message || fallback;
@@ -478,13 +478,44 @@ const Toggle = ({ checked, onChange, disabled }) => {
 };
 
 export const GalleryPage = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    limit: 20,
+    limit: 12,
   });
+
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filtersDraft, setFiltersDraft] = useState({
+    subCategoryId: "",
+    isActive: "",
+    fromDate: "",
+    toDate: "",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+  const [filters, setFilters] = useState({
+    subCategoryId: "",
+    isActive: "",
+    fromDate: "",
+    toDate: "",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setItems([]);
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+  }, [debouncedSearch, filters]);
 
   const [videoModal, setVideoModal] = useState({
     open: false,
@@ -503,8 +534,32 @@ export const GalleryPage = () => {
   });
 
   const bannersEndpoint = useMemo(() => {
-    return `${API_ENDPOINTS.BANNERS.GET_ALL}?page=${pagination.currentPage}&limit=${pagination.limit}`;
-  }, [pagination.currentPage, pagination.limit]);
+    const params = new URLSearchParams();
+    params.set("page", String(pagination.currentPage));
+    params.set("limit", String(pagination.limit));
+
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (filters.subCategoryId)
+      params.set("subCategoryId", filters.subCategoryId);
+    if (filters.isActive !== "")
+      params.set("isActive", String(filters.isActive));
+    if (filters.fromDate) params.set("fromDate", filters.fromDate);
+    if (filters.toDate) params.set("toDate", filters.toDate);
+    if (filters.sortBy) params.set("sortBy", filters.sortBy);
+    if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
+
+    return `${API_ENDPOINTS.BANNERS.GET_ALL}?${params.toString()}`;
+  }, [
+    pagination.currentPage,
+    pagination.limit,
+    debouncedSearch,
+    filters.subCategoryId,
+    filters.isActive,
+    filters.fromDate,
+    filters.toDate,
+    filters.sortBy,
+    filters.sortOrder,
+  ]);
 
   const {
     data: bannersData,
@@ -515,6 +570,8 @@ export const GalleryPage = () => {
     "banners",
     pagination.currentPage,
     pagination.limit,
+    debouncedSearch,
+    filters,
   ]);
 
   const { data: categoriesData } = useGetQuery(
@@ -552,7 +609,15 @@ export const GalleryPage = () => {
     if (!paged) return;
 
     const rows = paged.data || [];
-    setItems(rows);
+    setItems((prev) => {
+      if ((paged.page || 1) <= 1) return rows;
+      const seen = new Set(prev.map((x) => x?._id));
+      const next = [...prev];
+      for (const r of rows) {
+        if (!seen.has(r?._id)) next.push(r);
+      }
+      return next;
+    });
 
     setPagination((prev) => ({
       ...prev,
@@ -736,15 +801,71 @@ export const GalleryPage = () => {
     ];
   }, [updateMutation.isPending]);
 
-  const pageBusy = isLoading;
+  const pageBusy = isLoading && pagination.currentPage === 1;
   const mutationBusy = isCreating || isDeleting || updateMutation.isPending;
 
-  const handlePageChange = (newPage) => {
-    setPagination((prev) => ({ ...prev, currentPage: newPage }));
+  const hasActiveFilters = useMemo(() => {
+    return (
+      !!debouncedSearch ||
+      !!filters.subCategoryId ||
+      filters.isActive !== "" ||
+      !!filters.fromDate ||
+      !!filters.toDate ||
+      (filters.sortBy && filters.sortBy !== "createdAt") ||
+      (filters.sortOrder && filters.sortOrder !== "desc")
+    );
+  }, [
+    debouncedSearch,
+    filters.subCategoryId,
+    filters.isActive,
+    filters.fromDate,
+    filters.toDate,
+    filters.sortBy,
+    filters.sortOrder,
+  ]);
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setDebouncedSearch("");
+    setFilters({
+      subCategoryId: "",
+      isActive: "",
+      fromDate: "",
+      toDate: "",
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    });
+    setFiltersDraft({
+      subCategoryId: "",
+      isActive: "",
+      fromDate: "",
+      toDate: "",
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    });
   };
 
-  const handleLimitChange = (newLimit) => {
-    setPagination((prev) => ({ ...prev, limit: newLimit, currentPage: 1 }));
+  const handleLoadMore = () => {
+    setPagination((prev) => {
+      if (prev.currentPage >= prev.totalPages) return prev;
+      return { ...prev, currentPage: prev.currentPage + 1 };
+    });
+  };
+
+  const handleOpenDetails = (row) => {
+    if (!row?._id) return;
+    navigate(`/gallery/${row._id}`);
+  };
+
+  const getDescriptionStyle = () => ({
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  });
+
+  const getSubCategoryLabel = (row) => {
+    return formatGrammer(row?.subCategory?.name || "");
   };
 
   if (pageBusy) {
@@ -794,43 +915,336 @@ export const GalleryPage = () => {
 
       {!isNotFound ? (
         <>
-          <Table
-            title="Gallery Management"
-            addButtonText="Add Items"
-            columns={columns}
-            data={items}
-            onAddNew={handleOpenCreate}
-            onEdit={handleOpenEdit}
-            onDelete={handleDelete}
-          />
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {items.length} of {pagination.totalItems} items
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label htmlFor="limit" className="text-sm font-medium">
-                  Items per page:
-                </label>
-                <select
-                  id="limit"
-                  value={pagination.limit}
-                  onChange={(e) => handleLimitChange(Number(e.target.value))}
-                  className="rounded border px-2 py-1 text-sm"
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </div>
-              <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={handlePageChange}
+          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search gallery items..."
+                className="w-full sm:max-w-md rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+
+              <select
+                value={filters.subCategoryId}
+                onChange={(e) =>
+                  setFilters((p) => ({ ...p, subCategoryId: e.target.value }))
+                }
+                className="w-full sm:max-w-xs rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title="Filter by subcategory"
+              >
+                <option value="">All</option>
+                {subCategories.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {formatGrammer(c.name)}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltersDraft(filters);
+                  setFilterOpen(true);
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                title="Filter"
+              >
+                <span>Filters</span>
+              </button>
+
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="text-sm font-semibold text-blue-700 hover:underline"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {filterOpen ? (
+            <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Subcategory
+                  </label>
+                  <select
+                    value={filtersDraft.subCategoryId}
+                    onChange={(e) =>
+                      setFiltersDraft((p) => ({
+                        ...p,
+                        subCategoryId: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  >
+                    <option value="">Any</option>
+                    {subCategories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {formatGrammer(c.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Is Active
+                  </label>
+                  <select
+                    value={filtersDraft.isActive}
+                    onChange={(e) =>
+                      setFiltersDraft((p) => ({
+                        ...p,
+                        isActive: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  >
+                    <option value="">Any</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={filtersDraft.fromDate}
+                    onChange={(e) =>
+                      setFiltersDraft((p) => ({
+                        ...p,
+                        fromDate: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={filtersDraft.toDate}
+                    onChange={(e) =>
+                      setFiltersDraft((p) => ({ ...p, toDate: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Sort
+                  </label>
+                  <div className="mt-1 flex gap-2">
+                    <select
+                      value={filtersDraft.sortBy}
+                      onChange={(e) =>
+                        setFiltersDraft((p) => ({
+                          ...p,
+                          sortBy: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    >
+                      <option value="createdAt">Created At</option>
+                      <option value="updatedAt">Updated At</option>
+                      <option value="name">Name</option>
+                    </select>
+                    <select
+                      value={filtersDraft.sortOrder}
+                      onChange={(e) =>
+                        setFiltersDraft((p) => ({
+                          ...p,
+                          sortOrder: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    >
+                      <option value="desc">Desc</option>
+                      <option value="asc">Asc</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFiltersDraft(filters);
+                    setFilterOpen(false);
+                  }}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters(filtersDraft);
+                    setFilterOpen(false);
+                  }}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-lg font-semibold text-slate-800">
+                Gallery Management
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                Showing {items.length} of {pagination.totalItems} items
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              disabled={mutationBusy}
+            >
+              Add Items
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+            {items.map((row) => {
+              const hasVideo = !!row?.video;
+              const media = hasVideo ? (
+                <video
+                  src={row.video}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-56 w-full rounded-lg bg-black object-cover"
+                />
+              ) : (
+                <img
+                  src={row.image || "/images/default.png"}
+                  alt={row.name || "-"}
+                  className="h-56 w-full rounded-lg object-cover"
+                />
+              );
+
+              return (
+                <div
+                  key={row._id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenDetails(row)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleOpenDetails(row);
+                  }}
+                  className="group rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="relative">{media}</div>
+
+                  <div className="mt-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-base font-bold text-slate-900">
+                        {formatGrammer(row.name || "-")}
+                      </div>
+                      <div className="mt-2">
+                        <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                          {getSubCategoryLabel(row)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <Toggle
+                        checked={!!row.isActive}
+                        onChange={(e) => {
+                          e?.stopPropagation?.();
+                          handleToggleActive(row);
+                        }}
+                        disabled={updateMutation.isPending}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDetails(row);
+                        }}
+                        className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-700 hover:bg-slate-50"
+                        title="View"
+                      >
+                        <Eye size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-3 text-sm text-slate-600"
+                    style={getDescriptionStyle()}
+                    title={row.description || ""}
+                  >
+                    {row.description || "-"}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(row);
+                      }}
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50"
+                      disabled={mutationBusy}
+                      title="Edit"
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(row);
+                      }}
+                      className="inline-flex items-center justify-center rounded-lg bg-red-600 p-2 text-white hover:bg-red-700"
+                      disabled={mutationBusy}
+                      title="Delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            {pagination.currentPage < pagination.totalPages ? (
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                className="rounded-lg bg-slate-900 px-6 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                disabled={isLoading || mutationBusy}
+              >
+                {isLoading ? "Loading..." : "Load More"}
+              </button>
+            ) : (
+              <div className="text-sm text-slate-500">No more items</div>
+            )}
           </div>
         </>
       ) : null}

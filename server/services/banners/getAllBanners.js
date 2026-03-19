@@ -23,7 +23,7 @@ exports.getAllBanners = async (query) => {
   }
   if (subCategoryId) {
     validateObjectId(subCategoryId, "SubCategory Id");
-    match.subCategoryId = mongoose.Types.ObjectId(subCategoryId);
+    match.subCategoryId = new mongoose.Types.ObjectId(subCategoryId);
   }
   if (name) match.name = { $regex: new RegExp(name, "i") };
   if (search) {
