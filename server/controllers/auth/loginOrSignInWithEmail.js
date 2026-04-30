@@ -10,18 +10,21 @@ const {
 const { sendLoginOtpMail } = require("../../helpers/nodeMailer");
 
 exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
-  let { email, role, loginType } = req.body;
+  let { email, role, loginType, isPermissionGiven } = req.body;
   if (!email) throwError(422, "Email is required");
   email = email?.toLowerCase();
   role = role?.toLowerCase() || ROLES.USER;
   loginType = loginType?.toLowerCase() || LOGIN_TYPES.EMAIL;
+  if (!isPermissionGiven) {
+    throwError(403, "Please give the permission to continue");
+  }
   const updatedData = {
     code: generateOTP(),
     expiresAt: new Date(Date.now() + 5 * 60 * 1000),
   };
   let isFirst = false;
   let user = await User.findOne({ email, role, isDeleted: false }).select(
-    "+password"
+    "+password",
   );
   if (!user) {
     isFirst = true;
@@ -31,9 +34,11 @@ exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
       loginType,
       password: defaultPassword,
       otp: updatedData,
+      isPermissionGiven,
     });
   } else {
     user.otp = updatedData;
+    user.isPermissionGiven = isPermissionGiven;
     user = await user.save();
   }
   sendLoginOtpMail(email, updatedData.code);
@@ -41,6 +46,6 @@ exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
     res,
     200,
     "OTP has been sent to your Email. Please check your inbox.",
-    { isFirst }
+    { isFirst },
   );
 });

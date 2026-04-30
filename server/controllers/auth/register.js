@@ -3,9 +3,21 @@ const { ROLES, LOGIN_TYPES } = require("../../constants");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
 
 exports.register = asyncWrapper(async (req, res) => {
-  let { name, email, password, mobile, role, loginType, fcmToken } = req.body;
+  let {
+    name,
+    email,
+    password,
+    mobile,
+    role,
+    loginType,
+    fcmToken,
+    isPermissionGiven,
+  } = req.body;
   if (!mobile && !email) {
     throwError(422, "Email or Mobile number any one of this is required");
+  }
+  if (!isPermissionGiven) {
+    throwError(403, "Please give the permission to continue");
   }
   email = email?.toLowerCase();
   name = name?.toLowerCase();
@@ -30,6 +42,7 @@ exports.register = asyncWrapper(async (req, res) => {
     loginType,
     isLoggedIn: true,
     isOnline: true,
+    isPermissionGiven,
   };
   user = await User.create(userData);
   const token = user.getSignedJwtToken();

@@ -5,23 +5,35 @@ const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
 const { sendOtpToMobile } = require("../../helpers/twoFactor");
 
 exports.loginOrSignInWithMobile = asyncWrapper(async (req, res) => {
-  let { mobile, role, loginType } = req.body;
+  let { mobile, role, loginType, isPermissionGiven } = req.body;
   if (!mobile) throwError(422, "Mobile number is required");
   role = role?.toLowerCase() || ROLES.USER;
   loginType = loginType?.toLowerCase() || LOGIN_TYPES.MOBILE;
+  if (!isPermissionGiven) {
+    throwError(403, "Please give the permission to continue");
+  }
   let isFirst = false;
   let user = await User.findOne({ mobile, role, isDeleted: false }).select(
-    "+password"
+    "+password",
   );
   if (!user) {
     isFirst = true;
-    user = User.create({ mobile, role, loginType, password: defaultPassword });
+    user = User.create({
+      mobile,
+      role,
+      loginType,
+      password: defaultPassword,
+      isPermissionGiven,
+    });
+  } else {
+    user.isPermissionGiven = isPermissionGiven;
+    user = await user.save();
   }
   const otpData = await sendOtpToMobile(mobile);
   return sendSuccess(
     res,
     200,
     "OTP has been sent to your Mobile. Please check your inbox.",
-    { otpData, isFirst }
+    { otpData, isFirst },
   );
 });
