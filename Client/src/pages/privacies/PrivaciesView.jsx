@@ -3,27 +3,20 @@ import { useGetQuery } from "../../api/apiCall";
 import Loader from "../../components/UI/Loader";
 import formatGrammer from "../../utils/formatGrammer";
 
-export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
-  const endpoint = prenatalCareId
-    ? API_ENDPOINTS.PRENATAL_CARES.GET_ONE.replace(":id", prenatalCareId)
+export const PrivaciesView = ({ privacyId, onClose }) => {
+  const endpoint = privacyId
+    ? API_ENDPOINTS.PRIVACY_AND_POLICIES.GET_ONE.replace(":id", privacyId)
     : null;
 
-  const { data, isLoading } = useGetQuery(endpoint, [
-    "prenatalCare",
-    prenatalCareId,
-  ]);
-
+  const { data, isLoading } = useGetQuery(endpoint, ["privacy", privacyId]);
   const item = data?.data || data?.result || data;
 
   return (
-    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Prenatal Care Details</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
+          <h2 className="text-xl font-bold">Privacy & Policies Details</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -47,25 +40,15 @@ export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
           </div>
         ) : item ? (
           <div className="space-y-4">
-            {item.image ? (
-              <div className="flex flex-col items-center">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="max-h-48 object-contain rounded"
-                />
-              </div>
-            ) : null}
-
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Name</h3>
-              <p className="mt-1">{formatGrammer(item.name) || "-"}</p>
+              <h3 className="text-sm font-medium text-gray-500">Title</h3>
+              <p className="mt-1">{formatGrammer(item?.title) || "-"}</p>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500">Description</h3>
               <p className="mt-1">
-                {formatGrammer(item.description) || "No description provided"}
+                {formatGrammer(item?.description) || "No description provided"}
               </p>
             </div>
 
@@ -77,18 +60,14 @@ export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
             <div>
               <h3 className="text-sm font-medium text-gray-500">Created At</h3>
               <p className="mt-1">
-                {item?.createdAt
-                  ? new Date(item.createdAt).toLocaleString()
-                  : "N/A"}
+                {item?.createdAt ? new Date(item.createdAt).toLocaleString() : "N/A"}
               </p>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500">Updated At</h3>
               <p className="mt-1">
-                {item?.updatedAt
-                  ? new Date(item.updatedAt).toLocaleString()
-                  : "N/A"}
+                {item?.updatedAt ? new Date(item.updatedAt).toLocaleString() : "N/A"}
               </p>
             </div>
           </div>

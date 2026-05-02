@@ -1,25 +1,25 @@
-import API_ENDPOINTS from "../../api/apiEndpoint";
-import { useGetQuery } from "../../api/apiCall";
-import Loader from "../../components/UI/Loader";
 import formatGrammer from "../../utils/formatGrammer";
+import Loader from "../../components/UI/Loader";
+import { useGetQuery } from "../../api/apiCall";
+import API_ENDPOINTS from "../../api/apiEndpoint";
 
-export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
-  const endpoint = prenatalCareId
-    ? API_ENDPOINTS.PRENATAL_CARES.GET_ONE.replace(":id", prenatalCareId)
+export const ContactInquiryView = ({ inquiryId, onClose }) => {
+  const endpoint = inquiryId
+    ? API_ENDPOINTS.CONTACT_US.GET_ONE.replace(":id", inquiryId)
     : null;
 
   const { data, isLoading } = useGetQuery(endpoint, [
-    "prenatalCare",
-    prenatalCareId,
+    "contactInquiry",
+    inquiryId,
   ]);
 
-  const item = data?.data || data?.result || data;
+  const inquiry = data?.data || data?.result || data;
 
   return (
-    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Prenatal Care Details</h2>
+          <h2 className="text-xl font-bold">Contact Inquiry Details</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -45,40 +45,47 @@ export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
           <div className="flex justify-center items-center py-10">
             <Loader size={70} color="#3B82F6" />
           </div>
-        ) : item ? (
+        ) : inquiry ? (
           <div className="space-y-4">
-            {item.image ? (
-              <div className="flex flex-col items-center">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="max-h-48 object-contain rounded"
-                />
-              </div>
-            ) : null}
-
             <div>
               <h3 className="text-sm font-medium text-gray-500">Name</h3>
-              <p className="mt-1">{formatGrammer(item.name) || "-"}</p>
+              <p className="mt-1">{formatGrammer(inquiry?.name) || "-"}</p>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Description</h3>
+              <h3 className="text-sm font-medium text-gray-500">Email</h3>
+              <p className="mt-1">{inquiry?.email || "-"}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Mobile</h3>
+              <p className="mt-1">{inquiry?.mobile || "-"}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">City</h3>
+              <p className="mt-1">{formatGrammer(inquiry?.city) || "-"}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">
+                Permission to Contact
+              </h3>
               <p className="mt-1">
-                {formatGrammer(item.description) || "No description provided"}
+                {inquiry?.isPermissionGiven ? "Given" : "Not given"}
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Status</h3>
-              <p className="mt-1">{item?.isActive ? "Active" : "Inactive"}</p>
+              <h3 className="text-sm font-medium text-gray-500">Message</h3>
+              <p className="mt-1">{formatGrammer(inquiry?.message) || "-"}</p>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500">Created At</h3>
               <p className="mt-1">
-                {item?.createdAt
-                  ? new Date(item.createdAt).toLocaleString()
+                {inquiry?.createdAt
+                  ? new Date(inquiry.createdAt).toLocaleString()
                   : "N/A"}
               </p>
             </div>
@@ -86,8 +93,8 @@ export const PrenatalServicesView = ({ prenatalCareId, onClose }) => {
             <div>
               <h3 className="text-sm font-medium text-gray-500">Updated At</h3>
               <p className="mt-1">
-                {item?.updatedAt
-                  ? new Date(item.updatedAt).toLocaleString()
+                {inquiry?.updatedAt
+                  ? new Date(inquiry.updatedAt).toLocaleString()
                   : "N/A"}
               </p>
             </div>

@@ -108,9 +108,48 @@ const GalleryPage = lazy(() =>
   })),
 );
 
+/* ===================== SUBSCRIPTIONS ===================== */
+const SubscriptionPage = lazy(() =>
+  import("./pages/subscriptions/SubscriptionPage").then((m) => ({
+    default: m.SubscriptionPage,
+  })),
+);
+const SubscriptionAddEdit = lazy(() =>
+  import("./pages/subscriptions/SubscriptionAddEdit").then((m) => ({
+    default: m.SubscriptionAddEdit,
+  })),
+);
+
 const GalleryDetails = lazy(() =>
   import("./pages/gallery/GalleryDetails").then((m) => ({
     default: m.GalleryDetails,
+  })),
+);
+
+/* ===================== CONTACT INQUIRIES ===================== */
+const ContactInquiriesPage = lazy(() =>
+  import("./pages/contactInquiries/ContactInquiriesPage").then((m) => ({
+    default: m.ContactInquiriesPage,
+  })),
+);
+
+/* ===================== TERMS & PRIVACY ===================== */
+const TermsPage = lazy(() =>
+  import("./pages/terms/TermsPage").then((m) => ({ default: m.TermsPage })),
+);
+const TermsAddEdit = lazy(() =>
+  import("./pages/terms/TermsAddEdit").then((m) => ({
+    default: m.TermsAddEdit,
+  })),
+);
+const PrivaciesPage = lazy(() =>
+  import("./pages/privacies/PrivaciesPage").then((m) => ({
+    default: m.PrivaciesPage,
+  })),
+);
+const PrivaciesAddEdit = lazy(() =>
+  import("./pages/privacies/PrivaciesAddEdit").then((m) => ({
+    default: m.PrivaciesAddEdit,
   })),
 );
 
@@ -200,19 +239,29 @@ const App = () => {
                 />
                 <Route
                   path="/contact-inquiries"
-                  element={<PlaceholderPage title="Contact Inquiries" />}
+                  element={<ContactInquiriesPage />}
                 />
                 <Route
                   path="/wellness-mindfulness"
                   element={<PlaceholderPage title="Wellness & Mindfulness" />}
                 />
+                <Route path="/privacies" element={<PrivaciesPage />} />
+                <Route path="/privacies/add" element={<PrivaciesAddEdit />} />
                 <Route
-                  path="/privacies"
-                  element={<PlaceholderPage title="Privacy & Policies" />}
+                  path="/privacies/update/:id"
+                  element={<PrivaciesAddEdit />}
+                />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/terms/add" element={<TermsAddEdit />} />
+                <Route path="/terms/update/:id" element={<TermsAddEdit />} />
+                <Route path="/subscriptions" element={<SubscriptionPage />} />
+                <Route
+                  path="/subscriptions/add"
+                  element={<SubscriptionAddEdit />}
                 />
                 <Route
-                  path="/terms"
-                  element={<PlaceholderPage title="Terms & Conditions" />}
+                  path="/subscriptions/update/:id"
+                  element={<SubscriptionAddEdit />}
                 />
                 <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/gallery/:id" element={<GalleryDetails />} />

@@ -1,0 +1,7 @@
+const { asyncWrapper, sendSuccess } = require("../../utils");
+const { getSubscription } = require("../../services/subscriptions");
+
+exports.get = asyncWrapper(async (req, res) => {
+  const result = await getSubscription(req.params?.id);
+  return sendSuccess(res, 200, "Subscription fetched", result);
+});

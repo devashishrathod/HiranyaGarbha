@@ -1,24 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
 import Table from "../../components/UI/Table";
-import { useGetQuery, useDeleteMutation } from "../../api/apiCall";
-import API_ENDPOINTS from "../../api/apiEndpoint";
+import Pagination from "../../components/UI/Pagination";
 import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
-import { toast } from "react-hot-toast";
-import Pagination from "../../components/UI/Pagination";
-import { PrenatalServicesView } from "./prenatalServiceView";
-import formatGrammer from "../../utils/formatGrammer";
 
-export const PrenatalServicesPage = () => {
+import { useDeleteMutation, useGetQuery } from "../../api/apiCall";
+import API_ENDPOINTS from "../../api/apiEndpoint";
+import formatGrammer from "../../utils/formatGrammer";
+import { SubscriptionView } from "./SubscriptionView";
+
+export const SubscriptionPage = () => {
   const [items, setItems] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [filtersDraft, setFiltersDraft] = useState({
     name: "",
+    type: "",
     isActive: "",
     fromDate: "",
     toDate: "",
@@ -27,18 +32,21 @@ export const PrenatalServicesPage = () => {
   });
   const [filters, setFilters] = useState({
     name: "",
+    type: "",
     isActive: "",
     fromDate: "",
     toDate: "",
     sortBy: "createdAt",
     sortOrder: "desc",
   });
+
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
     limit: 20,
   });
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,19 +65,20 @@ export const PrenatalServicesPage = () => {
 
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.name) params.set("name", filters.name);
-    if (filters.isActive !== "")
-      params.set("isActive", String(filters.isActive));
+    if (filters.type) params.set("type", filters.type);
+    if (filters.isActive !== "") params.set("isActive", String(filters.isActive));
     if (filters.fromDate) params.set("fromDate", filters.fromDate);
     if (filters.toDate) params.set("toDate", filters.toDate);
     if (filters.sortBy) params.set("sortBy", filters.sortBy);
     if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
 
-    return `${API_ENDPOINTS.PRENATAL_CARES.GET_ALL}?${params.toString()}`;
+    return `${API_ENDPOINTS.SUBSCRIPTIONS.GET_ALL}?${params.toString()}`;
   }, [
     pagination.currentPage,
     pagination.limit,
     debouncedSearch,
     filters.name,
+    filters.type,
     filters.isActive,
     filters.fromDate,
     filters.toDate,
@@ -78,25 +87,26 @@ export const PrenatalServicesPage = () => {
   ]);
 
   const {
-    data: categoryData,
+    data: subscriptionsData,
     isLoading,
     error,
     refetch,
   } = useGetQuery(endpoint, [
-    "prenatalCares",
+    "subscriptions",
     pagination.currentPage,
     pagination.limit,
     debouncedSearch,
     filters,
   ]);
 
-  const { mutate: deleteCategory, isPending: isDeleting } = useDeleteMutation(
-    API_ENDPOINTS.PRENATAL_CARES.DELETE,
+  const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteMutation(
+    API_ENDPOINTS.SUBSCRIPTIONS.DELETE,
   );
 
   useEffect(() => {
-    const paged = categoryData?.data;
+    const paged = subscriptionsData?.data;
     if (!paged) return;
+
     const rows = paged.data || [];
     setItems(Array.isArray(rows) ? rows : []);
 
@@ -106,90 +116,74 @@ export const PrenatalServicesPage = () => {
       totalPages: paged.totalPages || prev.totalPages,
       totalItems: paged.total || prev.totalItems,
     }));
-  }, [categoryData]);
+  }, [subscriptionsData]);
 
   const columns = [
     {
-      key: "image",
-      title: "Image",
-      render: (category) => (
-        <img
-          src={category.image || "/images/default.png"}
-          alt={category.title}
-          className="w-16 h-16 object-cover rounded-md"
-        />
-      ),
+      key: "name",
+      title: "Name",
+      render: (row) => <span className="font-medium">{formatGrammer(row.name) || "-"}</span>,
     },
     {
-      key: "title",
-      title: "Title",
-      render: (category) => (
-        <span className="font-medium">
-          {formatGrammer(category.name) || "No title"}
-        </span>
-      ),
+      key: "type",
+      title: "Type",
+      render: (row) => <span className="text-sm">{formatGrammer(row.type) || "-"}</span>,
     },
     {
-      key: "description",
-      title: "Description",
-      render: (category) => (
-        <div className="max-w-xs truncate">
-          {formatGrammer(category.description) || "No description"}
-        </div>
+      key: "price",
+      title: "Price",
+      render: (row) => <span className="text-sm">{typeof row.price === "number" ? row.price : "-"}</span>,
+    },
+    {
+      key: "durationInDays",
+      title: "Duration (Days)",
+      render: (row) => (
+        <span className="text-sm">{typeof row.durationInDays === "number" ? row.durationInDays : "-"}</span>
       ),
     },
     {
       key: "isActive",
       title: "Status",
       render: (row) => (
-        <span className="text-sm text-gray-800">
-          {row?.isActive ? "Active" : "Inactive"}
-        </span>
+        <span className="text-sm text-gray-800">{row?.isActive ? "Active" : "Inactive"}</span>
       ),
     },
     {
       key: "createdAt",
       title: "Created At",
-      render: (category) =>
-        category.createdAt
-          ? new Date(category.createdAt).toLocaleDateString()
-          : "N/A",
+      render: (row) =>
+        row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "N/A",
     },
     {
       key: "updatedAt",
       title: "Updated At",
-      render: (category) =>
-        category.updatedAt
-          ? new Date(category.updatedAt).toLocaleDateString()
-          : "N/A",
+      render: (row) =>
+        row.updatedAt ? new Date(row.updatedAt).toLocaleDateString() : "N/A",
     },
   ];
 
-  const handleView = (category) => {
-    setSelectedCategory(category);
+  const handleView = (row) => {
+    setSelectedItem(row);
     setIsViewModalOpen(true);
   };
 
-  const handleEdit = (category) => {
-    navigate(`/prenatal-cares/update/${category._id}`);
+  const handleEdit = (row) => {
+    navigate(`/subscriptions/update/${row._id}`);
   };
 
-  const handleDelete = (categoryToDelete) => {
-    if (window.confirm("Are you sure you want to delete this prenatal care?")) {
-      deleteCategory(categoryToDelete._id, {
-        onSuccess: () => {
-          toast.success("Prenatal care deleted successfully!");
-          refetch();
-        },
-        onError: (error) => {
-          toast.error(`Error deleting prenatal care: ${error.message}`);
-        },
-      });
-    }
+  const handleDelete = (row) => {
+    if (!window.confirm("Are you sure you want to delete this subscription?")) return;
+
+    deleteSubscription(row._id, {
+      onSuccess: (res) => {
+        toast.success(res?.message || "Subscription deleted successfully!");
+        refetch();
+      },
+    });
   };
 
   const handleAddNew = () => {
-    navigate("/prenatal-cares/add");
+    navigate("/subscriptions/add");
   };
 
   const handlePageChange = (newPage) => {
@@ -220,6 +214,7 @@ export const PrenatalServicesPage = () => {
     setDebouncedSearch("");
     setFilters({
       name: "",
+      type: "",
       isActive: "",
       fromDate: "",
       toDate: "",
@@ -228,6 +223,7 @@ export const PrenatalServicesPage = () => {
     });
     setFiltersDraft({
       name: "",
+      type: "",
       isActive: "",
       fromDate: "",
       toDate: "",
@@ -249,28 +245,27 @@ export const PrenatalServicesPage = () => {
     if (error?.response?.status === 404) {
       return (
         <NotFound
-          title="No Prenatal Cares Found"
-          type="prenatalCare"
+          title="No Subscriptions Found"
+          type="default"
           message={notFoundMessage}
-          actionText="Create New Prenatal Care"
+          actionText="Create New Subscription"
           onAction={handleAddNew}
         />
       );
     }
-    if (error && error?.response?.status !== 404) {
-      return (
-        <div className="bg-red-100 p-4 rounded border border-red-300">
-          <h3 className="text-red-500 font-bold">Something went wrong</h3>
-          <p>{error.message}</p>
-          <button
-            onClick={() => refetch()}
-            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          >
-            Try Again
-          </button>
-        </div>
-      );
-    }
+
+    return (
+      <div className="bg-red-100 p-4 rounded border border-red-300">
+        <h3 className="text-red-500 font-bold">Something went wrong</h3>
+        <p>{error.message}</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -280,7 +275,7 @@ export const PrenatalServicesPage = () => {
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search prenatal care services..."
+            placeholder="Search subscriptions..."
             className="w-full sm:max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -322,10 +317,27 @@ export const PrenatalServicesPage = () => {
                 placeholder="Name"
               />
             </div>
+
             <div>
-              <label className="text-xs font-medium text-gray-600">
-                Is Active
-              </label>
+              <label className="text-xs font-medium text-gray-600">Type</label>
+              <select
+                value={filtersDraft.type}
+                onChange={(e) =>
+                  setFiltersDraft((p) => ({ ...p, type: e.target.value }))
+                }
+                className="mt-1 w-full border rounded px-2 py-2 text-sm"
+              >
+                <option value="">Any</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="half_yearly">Half Yearly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">Is Active</label>
               <select
                 value={filtersDraft.isActive}
                 onChange={(e) =>
@@ -338,10 +350,9 @@ export const PrenatalServicesPage = () => {
                 <option value="false">Inactive</option>
               </select>
             </div>
+
             <div>
-              <label className="text-xs font-medium text-gray-600">
-                From Date
-              </label>
+              <label className="text-xs font-medium text-gray-600">From Date</label>
               <input
                 type="date"
                 value={filtersDraft.fromDate}
@@ -351,10 +362,9 @@ export const PrenatalServicesPage = () => {
                 className="mt-1 w-full border rounded px-2 py-2 text-sm"
               />
             </div>
+
             <div>
-              <label className="text-xs font-medium text-gray-600">
-                To Date
-              </label>
+              <label className="text-xs font-medium text-gray-600">To Date</label>
               <input
                 type="date"
                 value={filtersDraft.toDate}
@@ -364,6 +374,7 @@ export const PrenatalServicesPage = () => {
                 className="mt-1 w-full border rounded px-2 py-2 text-sm"
               />
             </div>
+
             <div>
               <label className="text-xs font-medium text-gray-600">Sort</label>
               <div className="mt-1 flex gap-2">
@@ -377,14 +388,12 @@ export const PrenatalServicesPage = () => {
                   <option value="createdAt">Created At</option>
                   <option value="updatedAt">Updated At</option>
                   <option value="name">Name</option>
+                  <option value="price">Price</option>
                 </select>
                 <select
                   value={filtersDraft.sortOrder}
                   onChange={(e) =>
-                    setFiltersDraft((p) => ({
-                      ...p,
-                      sortOrder: e.target.value,
-                    }))
+                    setFiltersDraft((p) => ({ ...p, sortOrder: e.target.value }))
                   }
                   className="w-full border rounded px-2 py-2 text-sm"
                 >
@@ -401,6 +410,7 @@ export const PrenatalServicesPage = () => {
               onClick={() => {
                 setFiltersDraft({
                   name: "",
+                  type: "",
                   isActive: "",
                   fromDate: "",
                   toDate: "",
@@ -427,8 +437,8 @@ export const PrenatalServicesPage = () => {
       ) : null}
 
       <Table
-        title="Prenatal Care Services"
-        addButtonText="Create New Prenatal Care"
+        title="Subscriptions"
+        addButtonText="Create New Subscription"
         columns={columns}
         data={items}
         onAddNew={handleAddNew}
@@ -437,6 +447,7 @@ export const PrenatalServicesPage = () => {
         onDelete={handleDelete}
         isLoading={isDeleting}
       />
+
       <div className="mt-4 flex justify-between items-center">
         <div className="text-sm text-gray-600">
           Showing {items.length} of {pagination.totalItems} records
@@ -467,8 +478,8 @@ export const PrenatalServicesPage = () => {
       </div>
 
       {isViewModalOpen && (
-        <PrenatalServicesView
-          prenatalCareId={selectedCategory?._id}
+        <SubscriptionView
+          subscriptionId={selectedItem?._id}
           onClose={() => setIsViewModalOpen(false)}
         />
       )}

@@ -18,44 +18,45 @@ export const PrenatalServicesAddEdit = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    isActive: true,
   });
 
   const [previewImage, setPreviewImage] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const { mutate: addCategory, isLoading: isAdding } = usePostMutation(
-    API_ENDPOINTS.CATEGORIES.CREATE,
+  const { mutate: addCategory, isPending: isAdding } = usePostMutation(
+    API_ENDPOINTS.PRENATAL_CARES.CREATE,
     {
       onUploadProgress: (progressEvent) => {
         const progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          (progressEvent.loaded * 100) / (progressEvent.total || 1),
         );
         setUploadProgress(progress);
       },
-    }
+    },
   );
 
-  const { mutate: updateCategory, isLoading: isUpdating } = usePutMutation(
-    `${API_ENDPOINTS.CATEGORIES.UPDATE.replace(":id", id)}`,
+  const { mutate: updateCategory, isPending: isUpdating } = usePutMutation(
+    `${API_ENDPOINTS.PRENATAL_CARES.UPDATE.replace(":id", id)}`,
     {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (progressEvent) => {
         const progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          (progressEvent.loaded * 100) / (progressEvent.total || 1),
         );
         setUploadProgress(progress);
       },
-    }
+    },
   );
 
   const { data: categoryData, isLoading: isFetchingCategory } = useGetQuery(
     isEditMode
-      ? `${API_ENDPOINTS.CATEGORIES.GET_ONE.replace(":id", id)}`
+      ? `${API_ENDPOINTS.PRENATAL_CARES.GET_ONE.replace(":id", id)}`
       : null,
     {
       enabled: isEditMode,
       refetchOnWindowFocus: false,
-    }
+    },
   );
 
   useEffect(() => {
@@ -65,6 +66,8 @@ export const PrenatalServicesAddEdit = () => {
         setFormData({
           name: category.name || "",
           description: category.description || "",
+          isActive:
+            typeof category.isActive === "boolean" ? category.isActive : true,
         });
         if (category.image) {
           const imageUrl = category.image.startsWith("http")
@@ -81,12 +84,13 @@ export const PrenatalServicesAddEdit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      toast.error("Title is required");
+      toast.error("Name is required");
       return;
     }
     const formDataToSend = new FormData();
     formDataToSend.append("name", formData.name.trim());
     formDataToSend.append("description", formData.description.trim());
+    formDataToSend.append("isActive", String(!!formData.isActive));
     if (formData.image) {
       formDataToSend.append("image", formData.image);
     }
@@ -99,10 +103,10 @@ export const PrenatalServicesAddEdit = () => {
       setUploadProgress(0);
       toast.success(
         isEditMode
-          ? "Category updated successfully!"
-          : "Category added successfully!"
+          ? "Prenatal care updated successfully!"
+          : "Prenatal care created successfully!",
       );
-      setTimeout(() => navigate("/category"), 1000);
+      setTimeout(() => navigate("/prenatal-cares"), 1000);
     };
     const onError = (error) => {
       console.error("API Error:", error);
@@ -162,7 +166,7 @@ export const PrenatalServicesAddEdit = () => {
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <Loader size={100} color="#3B82F6" />
-          <p className="mt-4 text-gray-600">Loading category data...</p>
+          <p className="mt-4 text-gray-600">Loading prenatal care...</p>
         </div>
       </div>
     );
@@ -175,19 +179,19 @@ export const PrenatalServicesAddEdit = () => {
       <div className="bg-white shadow-lg rounded-lg p-6">
         <div className="flex justify-between items-center mb-6 pb-3 border-b">
           <h2 className="text-2xl font-bold text-gray-800">
-            {isEditMode ? "Edit Category" : "Add New Category"}
+            {isEditMode ? "Edit Prenatal Care" : "Add Prenatal Care"}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
           <div className="flex flex-col">
             <label htmlFor="name" className="mb-2 font-medium text-gray-700">
-              Title <span className="text-red-500">*</span>
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
               type="text"
-              placeholder="Enter category name"
+              placeholder="Enter prenatal care name"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -210,7 +214,7 @@ export const PrenatalServicesAddEdit = () => {
             </label>
             <textarea
               id="description"
-              placeholder="Enter category description"
+              placeholder="Enter description"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -223,10 +227,30 @@ export const PrenatalServicesAddEdit = () => {
               {formData.description.length}/500 characters
             </span>
           </div>
+
+          <div className="flex flex-col">
+            <label className="block mb-2 font-medium text-gray-700">
+              Status
+            </label>
+            <select
+              value={String(!!formData.isActive)}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  isActive: e.target.value === "true",
+                }))
+              }
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              disabled={isLoading}
+            >
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
           {/* Image Upload */}
           <div className="flex flex-col">
             <label className="block mb-2 font-medium text-gray-700">
-              Category Image
+              Image
             </label>
             <div className="flex w-full rounded-lg overflow-hidden border border-gray-300 items-center">
               <label
@@ -320,14 +344,14 @@ export const PrenatalServicesAddEdit = () => {
                   {isEditMode ? "Updating..." : "Adding..."}
                 </span>
               ) : isEditMode ? (
-                "Update Category"
+                "Update Prenatal Care"
               ) : (
-                "Add Category"
+                "Add Prenatal Care"
               )}
             </button>
             <button
               type="button"
-              onClick={() => navigate("/category")}
+              onClick={() => navigate("/prenatal-cares")}
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-3 px-6 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
               disabled={isLoading}
             >

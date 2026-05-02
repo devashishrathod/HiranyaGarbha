@@ -21,6 +21,7 @@ const LoginForm = () => {
       email,
       password,
       role: CONSTANTS.ROLES.ADMIN,
+      isPermissionGiven: true,
     };
     const result = await login(loginData);
     console.log(loginData, result, "API");

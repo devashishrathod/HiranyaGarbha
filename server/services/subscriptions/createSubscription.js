@@ -13,7 +13,7 @@ exports.createSubscription = async (payload) => {
   if (!payload.type) throwError(400, "Subscription type is required");
   payload.durationInDays = computeDuration(payload?.type);
   const existing = await Subscription.findOne({
-    name: payload?.name,
+    name: payload?.name?.toLowerCase(),
     type: payload?.type,
     isDeleted: false,
   });

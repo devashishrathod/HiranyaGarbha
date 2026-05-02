@@ -30,6 +30,8 @@ const Sidebar = () => {
       "M12 21c4.418 0 8-3.582 8-8a8 8 0 10-13.856 5.856A8 8 0 0012 21zm0-9a3 3 0 110-6 3 3 0 010 6z",
     wellness:
       "M12 20c4 0 7-3 8-6-2-1-4-2-8-2s-6 1-8 2c1 3 4 6 8 6zm0-8a4 4 0 100-8 4 4 0 000 8z",
+    subscriptions:
+      "M12 8c-1.657 0-3 1.343-3 3v1H7a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1v-6a1 1 0 00-1-1h-2v-1c0-1.657-1.343-3-3-3zm-1 4v-1a1 1 0 112 0v1h-2z",
     gallery:
       "M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm3 3a2 2 0 114 0 2 2 0 01-4 0zm10 8l-4-5-3 4H7l5-6 5 7h-2z",
     privacy_policy:
@@ -129,6 +131,12 @@ const Sidebar = () => {
             path: "/contact-inquiries",
             icon: icons.enquiries,
             color: "text-emerald-500",
+          },
+          {
+            name: "Subscriptions",
+            path: "/subscriptions",
+            icon: icons.subscriptions,
+            color: "text-cyan-600",
           },
           {
             name: "Gallery",
