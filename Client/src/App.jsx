@@ -27,6 +27,41 @@ import { NutritionPlanPage } from "./pages/nutritions/nutritionPlanPage";
 import { NutritionPlanAddEdit } from "./pages/nutritions/nutritionPlanAddEdit";
 import { MealPlanPage } from "./pages/mealPlans/mealPlanPage";
 import { MealPlanAddEdit } from "./pages/mealPlans/mealPlanAddEdit";
+/* ===================== NEW PAGES ===================== */
+const FAQPage = lazy(() =>
+  import("./pages/faq/faqPage").then((m) => ({ default: m.FAQPage })),
+);
+const MusicPage = lazy(() =>
+  import("./pages/musics/musicPage").then((m) => ({ default: m.MusicPage })),
+);
+const AppointmentPage = lazy(() =>
+  import("./pages/appointments/appointmentPage").then((m) => ({
+    default: m.AppointmentPage,
+  })),
+);
+const DailyMotivationPage = lazy(() =>
+  import("./pages/daily-motivation/dailyMotivationPage").then((m) => ({
+    default: m.DailyMotivationPage,
+  })),
+);
+const PackagesPage = lazy(() =>
+  import("./pages/packages/packagesPage").then((m) => ({
+    default: m.PackagesPage,
+  })),
+);
+const PatientProfilePage = lazy(() =>
+  import("./pages/patient-profile/patientProfilePage").then((m) => ({
+    default: m.PatientProfilePage,
+  })),
+);
+// const DoctorsPage = lazy(() => import("./pages/doctors/doctorsPage"));
+const DoctorsPage = lazy(() =>
+  import("./pages/doctors/doctorsPage").then((m) => ({
+    default: m.DoctorsPage,
+  })),
+);
+const HospitalsPage = lazy(() => import("./pages/hospitals/hospitalsPage"));
+const LabsPage = lazy(() => import("./pages/labs/labsPage"));
 /* ===================== AUTH & DASHBOARD ===================== */
 const Login = lazy(() =>
   import("./pages/Login").then((m) => ({ default: m.Login })),
@@ -265,6 +300,21 @@ const App = () => {
                 />
                 <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/gallery/:id" element={<GalleryDetails />} />
+                <Route path="/faq" element={<FAQPage />} />
+                <Route path="/musics" element={<MusicPage />} />
+                <Route path="/appointments" element={<AppointmentPage />} />
+                <Route
+                  path="/daily-motivation"
+                  element={<DailyMotivationPage />}
+                />
+                <Route path="/packages" element={<PackagesPage />} />
+                <Route
+                  path="/patient-profile"
+                  element={<PatientProfilePage />}
+                />
+                <Route path="/doctors" element={<DoctorsPage />} />
+                <Route path="/hospitals" element={<HospitalsPage />} />
+                <Route path="/labs" element={<LabsPage />} />
                 {/* Default redirect to dashboard */}
                 <Route
                   path="/"
