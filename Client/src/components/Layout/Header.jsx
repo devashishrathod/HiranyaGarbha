@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import PropTypes from "prop-types";
 import useAuth from "../../hooks/useAuth";
 
-const Header = () => {
+const Header = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
@@ -33,10 +33,6 @@ const Header = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const toggleMobileSearch = () => {
     setMobileSearchOpen(!mobileSearchOpen);
   };
@@ -50,24 +46,24 @@ const Header = () => {
           <button
             type="button"
             className="p-2 text-gray-600 rounded-lg lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-            onClick={toggleMobileMenu}
-            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            aria-expanded={mobileSidebarOpen}
             aria-label="Toggle mobile menu"
           >
             <div className="relative w-6 h-6">
               <span
                 className={`absolute top-1 left-0 w-6 h-0.5 bg-current transition-all duration-300 transform ${
-                  mobileMenuOpen ? "rotate-45 translate-y-2" : ""
+                  mobileSidebarOpen ? "rotate-45 translate-y-2" : ""
                 }`}
               ></span>
               <span
                 className={`absolute top-3 left-0 w-6 h-0.5 bg-current transition-all duration-300 ${
-                  mobileMenuOpen ? "opacity-0" : ""
+                  mobileSidebarOpen ? "opacity-0" : ""
                 }`}
               ></span>
               <span
                 className={`absolute top-5 left-0 w-6 h-0.5 bg-current transition-all duration-300 transform ${
-                  mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                  mobileSidebarOpen ? "-rotate-45 -translate-y-2" : ""
                 }`}
               ></span>
             </div>
@@ -339,108 +335,13 @@ const Header = () => {
           </div>
         </div>
       </div>
-
-      {/* Enhanced Mobile Menu */}
-      <div
-        className={`lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          mobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="px-4 py-3 space-y-1 bg-white border-b border-gray-200">
-          <Link
-            to="/dashboard"
-            className="flex items-center px-3 py-2 text-base font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-150"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <svg
-              className="w-5 h-5 mr-3 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-              />
-            </svg>
-            Dashboard
-          </Link>
-
-          {/* Role-based mobile menu items */}
-          {userData?.role !== "lab" && (
-            <Link
-              to="/patients"
-              className="flex items-center px-3 py-2 text-base font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-150"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <svg
-                className="w-5 h-5 mr-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              Patients
-            </Link>
-          )}
-          {(userData?.role === "doctor" ||
-            userData?.role === "receptionist") && (
-            <Link
-              to="/appointments"
-              className="flex items-center px-3 py-2 text-base font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-150"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <svg
-                className="w-5 h-5 mr-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Appointments
-            </Link>
-          )}
-          {(userData?.role === "admin" ||
-            userData?.role === "receptionist") && (
-            <Link
-              to="/doctors"
-              className="flex items-center px-3 py-2 text-base font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-150"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <svg
-                className="w-5 h-5 mr-3 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-              Doctors
-            </Link>
-          )}
-        </div>
-      </div>
     </header>
   );
+};
+
+Header.propTypes = {
+  mobileSidebarOpen: PropTypes.bool.isRequired,
+  setMobileSidebarOpen: PropTypes.func.isRequired,
 };
 
 export default Header;

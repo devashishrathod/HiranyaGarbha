@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
+import PropTypes from "prop-types";
 import useAuth from "../../hooks/useAuth";
 
-const Sidebar = () => {
+const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
   const location = useLocation();
   const { user } = useAuth();
   const userData = user || {};
@@ -194,8 +195,33 @@ const Sidebar = () => {
   console.log("Role value:", userData?.role);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 bg-white border-r border-gray-200 shadow-lg lg:block">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      } lg:block`}
+    >
       <div className="flex flex-col h-full">
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobileSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 text-white rounded-lg hover:bg-white hover:bg-opacity-20 transition-all duration-200"
+          aria-label="Close sidebar"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
         {/* Sidebar header - Logo area with enhanced design - FIXED */}
         <div className="flex-shrink-0 flex items-center justify-center h-20 px-6 bg-gradient-to-r from-blue-600 to-purple-600">
           <div className="flex items-center space-x-3">
@@ -225,6 +251,7 @@ const Sidebar = () => {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={() => setMobileSidebarOpen(false)}
                 className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive
                     ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-[1.02]"
@@ -301,6 +328,11 @@ const Sidebar = () => {
       </div>
     </aside>
   );
+};
+
+Sidebar.propTypes = {
+  mobileSidebarOpen: PropTypes.bool.isRequired,
+  setMobileSidebarOpen: PropTypes.func.isRequired,
 };
 
 export default Sidebar;
