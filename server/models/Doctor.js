@@ -8,6 +8,10 @@ const doctorSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    availabilityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DoctorAvailability",
+    },
     // Personal Details
     fullName: { type: String, trim: true },
     dateOfBirth: { type: String },
@@ -52,7 +56,7 @@ const doctorSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 module.exports = mongoose.model("Doctor", doctorSchema);

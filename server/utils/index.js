@@ -5,6 +5,11 @@ const { pagination } = require("./pagination");
 const { generateOTP } = require("./generateOTP");
 const { validateObjectId } = require("./validateObjectId");
 const { cleanJoiError } = require("./cleanJoiError");
+const {
+  minutesToTime,
+  isValidTimeFormat,
+  convertTimeToMinutes,
+} = require("./time");
 
 module.exports = {
   CustomError,
@@ -16,4 +21,7 @@ module.exports = {
   pagination,
   generateOTP,
   validateObjectId,
+  minutesToTime,
+  isValidTimeFormat,
+  convertTimeToMinutes,
 };
