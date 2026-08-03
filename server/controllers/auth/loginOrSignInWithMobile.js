@@ -3,6 +3,7 @@ const User = require("../../models/User");
 const { ROLES, LOGIN_TYPES } = require("../../constants");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
 const { sendOtpToMobile } = require("../../helpers/twoFactor");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.loginOrSignInWithMobile = asyncWrapper(async (req, res) => {
   let { mobile, role, loginType, isPermissionGiven } = req.body;
@@ -18,13 +19,14 @@ exports.loginOrSignInWithMobile = asyncWrapper(async (req, res) => {
   );
   if (!user) {
     isFirst = true;
-    user = User.create({
+    user = await User.create({
       mobile,
       role,
       loginType,
       password: defaultPassword,
       isPermissionGiven,
     });
+    await ensureRoleProfile(user, true);
   } else {
     user.isPermissionGiven = isPermissionGiven;
     user = await user.save();

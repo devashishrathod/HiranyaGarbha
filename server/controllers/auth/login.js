@@ -1,6 +1,7 @@
 const User = require("../../models/User");
 const { ROLES, LOGIN_TYPES } = require("../../constants");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.login = asyncWrapper(async (req, res) => {
   let {
@@ -38,6 +39,7 @@ exports.login = asyncWrapper(async (req, res) => {
   if (fcmToken) user.fcmToken = fcmToken;
   user.isPermissionGiven = isPermissionGiven;
   user = await user.save();
+  const profile = await ensureRoleProfile(user, false);
   const token = user.getSignedJwtToken();
-  return sendSuccess(res, 200, "User loggedin successfully", { user, token });
+  return sendSuccess(res, 200, "User loggedin successfully", { user, token, profile });
 });

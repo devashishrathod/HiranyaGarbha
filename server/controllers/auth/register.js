@@ -1,6 +1,7 @@
 const User = require("../../models/User");
 const { ROLES, LOGIN_TYPES } = require("../../constants");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.register = asyncWrapper(async (req, res) => {
   let {
@@ -45,6 +46,7 @@ exports.register = asyncWrapper(async (req, res) => {
     isPermissionGiven,
   };
   user = await User.create(userData);
+  const profile = await ensureRoleProfile(user, true);
   const token = user.getSignedJwtToken();
-  return sendSuccess(res, 201, "User registered successfully", { user, token });
+  return sendSuccess(res, 201, "User registered successfully", { user, token, profile });
 });

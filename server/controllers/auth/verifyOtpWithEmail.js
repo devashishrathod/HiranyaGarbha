@@ -2,6 +2,7 @@ const User = require("../../models/User");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
 const { sendOtpVerificationSuccessMail } = require("../../helpers/nodeMailer");
 const { ROLES, LOGIN_TYPES } = require("../../constants");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.verifyOtpWithEmail = asyncWrapper(async (req, res) => {
   let { otp, email, role, fcmToken, loginType, currentScreen } = req.body;
@@ -25,7 +26,8 @@ exports.verifyOtpWithEmail = asyncWrapper(async (req, res) => {
   if (currentScreen) user.currentScreen = currentScreen;
   if (fcmToken) user.fcmToken = fcmToken;
   user = await user.save();
+  const profile = await ensureRoleProfile(user, false);
   const token = user.getSignedJwtToken();
   sendOtpVerificationSuccessMail(email);
-  return sendSuccess(res, 200, "OTP Verification successful", { user, token });
+  return sendSuccess(res, 200, "OTP Verification successful", { user, token, profile });
 });

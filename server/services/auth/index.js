@@ -1,3 +1,5 @@
-const { registerUser } = require("./registerUser");
+const { ensureRoleProfile } = require("./ensureRoleProfile");
 
-module.exports = { registerUser };
+module.exports = {
+  ensureRoleProfile,
+};

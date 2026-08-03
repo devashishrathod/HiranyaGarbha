@@ -8,6 +8,7 @@ const {
   generateOTP,
 } = require("../../utils");
 const { sendLoginOtpMail } = require("../../helpers/nodeMailer");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
   let { email, role, loginType, isPermissionGiven } = req.body;
@@ -28,7 +29,7 @@ exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
   );
   if (!user) {
     isFirst = true;
-    user = User.create({
+    user = await User.create({
       email,
       role,
       loginType,
@@ -36,6 +37,7 @@ exports.loginOrSignInWithEmail = asyncWrapper(async (req, res) => {
       otp: updatedData,
       isPermissionGiven,
     });
+    await ensureRoleProfile(user, true);
   } else {
     user.otp = updatedData;
     user.isPermissionGiven = isPermissionGiven;

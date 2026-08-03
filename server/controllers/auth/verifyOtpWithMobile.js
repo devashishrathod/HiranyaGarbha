@@ -2,6 +2,7 @@ const User = require("../../models/User");
 const { ROLES, LOGIN_TYPES } = require("../../constants");
 const { asyncWrapper, sendSuccess, throwError } = require("../../utils");
 const { verifyOtpToMobile } = require("../../helpers/twoFactor");
+const { ensureRoleProfile } = require("../../services/auth");
 
 exports.verifyOtpWithMobile = asyncWrapper(async (req, res) => {
   let { sessionId, otp, mobile, role, fcmToken, loginType, currentScreen } =
@@ -25,10 +26,12 @@ exports.verifyOtpWithMobile = asyncWrapper(async (req, res) => {
     if (currentScreen) user.currentScreen = currentScreen;
     if (fcmToken) user.fcmToken = fcmToken;
     user = await user.save();
+    const profile = await ensureRoleProfile(user, false);
     const token = user.getSignedJwtToken();
     return sendSuccess(res, 200, "OTP Verification successful", {
       user,
       token,
+      profile,
     });
   } else {
     return res.status(400).json({ success: false, msg: "Invalid OTP" });
