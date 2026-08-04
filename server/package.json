@@ -26,6 +26,7 @@
     "express-fileupload": "^1.5.2",
     "joi": "^18.2.3",
     "jsonwebtoken": "^9.0.3",
+    "moment-timezone": "^0.6.3",
     "mongoose": "^9.8.0",
     "morgan": "^1.11.0",
     "nodemailer": "^9.0.3",

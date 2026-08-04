@@ -37,7 +37,11 @@ const doctorSchema = new mongoose.Schema(
       required: false,
     },
     department: { type: String },
-    consultationFee: { type: String },
+    consultationFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     availableDays: { type: String },
     availableTime: { type: String },
 

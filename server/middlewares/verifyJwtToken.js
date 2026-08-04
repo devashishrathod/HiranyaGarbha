@@ -1,5 +1,8 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const Doctor = require("../models/Doctor");
+const Patient = require("../models/Patient");
+const { ROLES } = require("../constants");
 const { getUserById } = require("../services/users");
 const { throwError, asyncWrapper } = require("../utils");
 
@@ -30,5 +33,12 @@ exports.verifyJwtToken = asyncWrapper(async (req, res, next) => {
   req.userId = user._id;
   req.role = user.role;
   req.user = user;
+  if (user.role === ROLES.DOCTOR) {
+    const doctor = await Doctor.findOne({ userId: user._id });
+    req.doctorId = doctor._id;
+  } else if (user.role === ROLES.USER) {
+    const patient = await Patient.findOne({ userId: user._id });
+    req.patientId = patient._id;
+  }
   next();
 });
