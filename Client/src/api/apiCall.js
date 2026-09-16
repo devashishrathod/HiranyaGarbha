@@ -118,6 +118,40 @@ export const usePutMutation = (endpoint, options = {}) => {
   });
 };
 
+/**
+ * Generic mutation for endpoints whose URL is only known at call time
+ * (e.g. /appointments/:appointmentId/confirm) or that need a verb the
+ * fixed-endpoint hooks above do not cover, such as PATCH.
+ *
+ * Call it as: mutate({ url, data, method })
+ */
+export const useApiMutation = (options = {}) => {
+  const {
+    method: defaultMethod = "post",
+    onError,
+    toastOnError = true,
+    ...restOptions
+  } = options || {};
+
+  return useMutation({
+    mutationFn: async ({ url, data, method } = {}) => {
+      const response = await axiosInstance.request({
+        url,
+        method: method || defaultMethod,
+        data,
+      });
+      return response.data;
+    },
+    onError: (error, variables, context) => {
+      if (toastOnError && typeof onError !== "function") {
+        toast.error(getApiErrorMessage(error));
+      }
+      return onError?.(error, variables, context);
+    },
+    ...restOptions,
+  });
+};
+
 // Generic DELETE request with React Query
 export const useDeleteMutation = (endpoint, options = {}) => {
   const { onError, toastOnError = true, ...restOptions } = options || {};
