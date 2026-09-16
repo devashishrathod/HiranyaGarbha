@@ -20,6 +20,57 @@ class AppointmentController {
     }
   }
 
+  // Admin-wide Appointment Listing
+  async getAll(req, res, next) {
+    try {
+      const result = await appointmentService.getAllAppointments({
+        search: req.query.search,
+        status: req.query.status,
+        appointmentType: req.query.appointmentType,
+        paymentStatus: req.query.paymentStatus,
+        doctorId: req.query.doctorId,
+        patientId: req.query.patientId,
+        hospitalId: req.query.hospitalId,
+        fromDate: req.query.fromDate,
+        toDate: req.query.toDate,
+        sortBy: req.query.sortBy,
+        sortOrder: req.query.sortOrder,
+        page: req.query.page,
+        limit: req.query.limit,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Appointments fetched successfully",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Status-wise Counters
+  async stats(req, res, next) {
+    try {
+      const result = await appointmentService.getAppointmentStats({
+        doctorId: req.query.doctorId,
+        patientId: req.query.patientId,
+        hospitalId: req.query.hospitalId,
+        appointmentType: req.query.appointmentType,
+        fromDate: req.query.fromDate,
+        toDate: req.query.toDate,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Appointment stats fetched successfully",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get Appointment By ID
   async getById(req, res, next) {
     try {

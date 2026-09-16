@@ -21,6 +21,11 @@ router.post(
 
 router.get("/slots", verifyJwtToken, appointmentController.availableSlots);
 
+// Keep the static paths above the /:appointmentId catch-all
+router.get("/get-all", verifyJwtToken, appointmentController.getAll);
+
+router.get("/stats", verifyJwtToken, appointmentController.stats);
+
 router.get("/:appointmentId", verifyJwtToken, appointmentController.getById);
 
 // Confirm

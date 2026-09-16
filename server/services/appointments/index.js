@@ -10,6 +10,17 @@ const {
   generateDailySlots,
 } = require("../../helpers/appointments/slots");
 
+const APPOINTMENT_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "CHECKED_IN",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "NO_SHOW",
+  "RESCHEDULED",
+];
+
 class AppointmentService {
   /**
    * Generate unique appointment number
@@ -535,6 +546,57 @@ class AppointmentService {
       page: Number(page),
       limit: Number(limit),
     });
+  }
+
+  /**
+   * Admin-wide appointment listing (every doctor / patient / hospital)
+   */
+  async getAllAppointments(params = {}) {
+    const { page = 1, limit = 10, ...rest } = params;
+
+    return AppointmentRepository.findAllAppointments({
+      ...rest,
+      page: Number(page),
+      limit: Number(limit),
+    });
+  }
+
+  /**
+   * Status-wise counters, optionally scoped to one doctor / patient / hospital
+   */
+  async getAppointmentStats(params = {}) {
+    const grouped = await AppointmentRepository.statusCounts(params);
+
+    const byStatus = APPOINTMENT_STATUSES.reduce((acc, status) => {
+      acc[status] = 0;
+      return acc;
+    }, {});
+
+    let total = 0;
+
+    grouped.forEach(({ _id, total: count }) => {
+      byStatus[_id] = count;
+      total += count;
+    });
+
+    const attended = byStatus.COMPLETED;
+    const missed = byStatus.NO_SHOW + byStatus.CANCELLED;
+    const settled = attended + missed;
+
+    return {
+      total,
+      byStatus,
+      upcoming:
+        byStatus.PENDING +
+        byStatus.CONFIRMED +
+        byStatus.CHECKED_IN +
+        byStatus.RESCHEDULED,
+      inProgress: byStatus.IN_PROGRESS,
+      completed: attended,
+      cancelled: byStatus.CANCELLED,
+      noShow: byStatus.NO_SHOW,
+      attendanceRate: settled ? Math.round((attended / settled) * 100) : 0,
+    };
   }
 
   /**
