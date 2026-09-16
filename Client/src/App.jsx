@@ -49,15 +49,30 @@ const PackagesPage = lazy(() =>
     default: m.PackagesPage,
   })),
 );
-const PatientProfilePage = lazy(() =>
-  import("./pages/patient-profile/patientProfilePage").then((m) => ({
-    default: m.PatientProfilePage,
+const NotificationsPage = lazy(() =>
+  import("./pages/notifications/notificationsPage").then((m) => ({
+    default: m.NotificationsPage,
   })),
 );
-// const DoctorsPage = lazy(() => import("./pages/doctors/doctorsPage"));
+/* ===================== PATIENTS & DOCTORS ===================== */
+const PatientsPage = lazy(() =>
+  import("./pages/patients/patientsPage").then((m) => ({
+    default: m.PatientsPage,
+  })),
+);
+const PatientDetailPage = lazy(() =>
+  import("./pages/patients/patientDetailPage").then((m) => ({
+    default: m.PatientDetailPage,
+  })),
+);
 const DoctorsPage = lazy(() =>
   import("./pages/doctors/doctorsPage").then((m) => ({
     default: m.DoctorsPage,
+  })),
+);
+const DoctorDetailPage = lazy(() =>
+  import("./pages/doctors/doctorDetailPage").then((m) => ({
+    default: m.DoctorDetailPage,
   })),
 );
 const HospitalsPage = lazy(() => import("./pages/hospitals/hospitalsPage"));
@@ -308,11 +323,19 @@ const App = () => {
                   element={<DailyMotivationPage />}
                 />
                 <Route path="/packages" element={<PackagesPage />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/patients" element={<PatientsPage />} />
+                <Route
+                  path="/patients/:userId"
+                  element={<PatientDetailPage />}
+                />
+                {/* Legacy link kept working after the /patients rename */}
                 <Route
                   path="/patient-profile"
-                  element={<PatientProfilePage />}
+                  element={<Navigate to="/patients" replace />}
                 />
                 <Route path="/doctors" element={<DoctorsPage />} />
+                <Route path="/doctors/:userId" element={<DoctorDetailPage />} />
                 <Route path="/hospitals" element={<HospitalsPage />} />
                 <Route path="/labs" element={<LabsPage />} />
                 {/* Default redirect to dashboard */}

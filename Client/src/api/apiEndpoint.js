@@ -61,9 +61,75 @@ const API_ENDPOINTS = {
   SUBSCRIPTIONS: {
     CREATE: "/subscriptions/add",
     GET_ALL: "/subscriptions/getAll",
+    GET_PACKAGES: "/subscriptions/packages",
     GET_ONE: "/subscriptions/get/:id",
     UPDATE: "/subscriptions/update/:id",
     DELETE: "/subscriptions/delete/:id",
+  },
+
+  /*
+   * Heads up on the id these take:
+   *  - GET_PROFILE / UPDATE_PROFILE expect the linked User._id
+   *  - DELETE accepts either the Patient._id or the User._id
+   *  - appointment endpoints expect the Patient._id / Doctor._id
+   */
+  PATIENTS: {
+    GET_ALL: "/patients/get-all",
+    GET_PROFILE: "/patients/profile", // ?userId=<User._id>
+    UPDATE_PROFILE: "/patients/update-profile", // ?patientId=<User._id>
+    CREATE: "/patients/create",
+    DELETE: "/patients/delete/:id",
+  },
+
+  DOCTORS: {
+    GET_ALL: "/doctors/get-all",
+    GET_PROFILE: "/doctors/profile", // ?doctorId=<User._id>
+    UPDATE_PROFILE: "/doctors/update-profile", // ?doctorId=<User._id>
+    CREATE: "/doctors/create",
+    DELETE: "/doctors/delete/:id",
+  },
+
+  DOCTOR_AVAILABILITY: {
+    GET: "/doctorAvailability/get/:doctorId", // Doctor._id
+    ADD_OR_UPDATE: "/doctorAvailability/add-or-update",
+  },
+
+  /*
+   * Not built on the server yet — the notification centre runs on mock data
+   * (components/notifications/notificationsMock.js) until these exist. Paths
+   * are written the way the rest of the API names things so wiring them up is
+   * a one-line swap per call.
+   */
+  NOTIFICATIONS: {
+    SEND: "/notifications/send",
+    GET_ALL: "/notifications/get-all",
+    GET_ONE: "/notifications/get/:id",
+    CANCEL_SCHEDULED: "/notifications/cancel/:id",
+    AUDIENCE_COUNT: "/notifications/audience-count",
+    TEMPLATES: {
+      GET_ALL: "/notifications/templates/getAll",
+      CREATE: "/notifications/templates/create",
+      UPDATE: "/notifications/templates/update/:id",
+      DELETE: "/notifications/templates/delete/:id",
+    },
+  },
+
+  APPOINTMENTS: {
+    GET_ALL: "/appointments/get-all",
+    STATS: "/appointments/stats",
+    BOOK: "/appointments/book",
+    SLOTS: "/appointments/slots", // ?doctorId=<Doctor._id>&appointmentDate=
+    GET_ONE: "/appointments/:appointmentId",
+    CONFIRM: "/appointments/:appointmentId/confirm",
+    CANCEL: "/appointments/:appointmentId/cancel",
+    RESCHEDULE: "/appointments/:appointmentId/reschedule",
+    CHECK_IN: "/appointments/:appointmentId/check-in",
+    START: "/appointments/:appointmentId/start",
+    COMPLETE: "/appointments/:appointmentId/complete",
+    NO_SHOW: "/appointments/:appointmentId/no-show",
+    BY_DOCTOR: "/appointments/doctor/:doctorId",
+    DOCTOR_TODAY: "/appointments/doctor/:doctorId/today",
+    BY_PATIENT: "/appointments/patient/:patientId",
   },
 };
 
