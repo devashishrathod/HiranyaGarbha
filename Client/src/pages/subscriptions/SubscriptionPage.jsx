@@ -10,7 +10,24 @@ import NotFound from "../../components/UI/NotFound";
 import { useDeleteMutation, useGetQuery } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import formatGrammer from "../../utils/formatGrammer";
+import {
+  PLAN_TRIMESTERS,
+  TIER_OPTIONS,
+  TRIMESTER_LABELS,
+  formatPrice,
+} from "../../constants/subscription";
 import { SubscriptionView } from "./SubscriptionView";
+
+const emptyFilters = {
+  name: "",
+  tier: "",
+  trimester: "",
+  isActive: "",
+  fromDate: "",
+  toDate: "",
+  sortBy: "displayOrder",
+  sortOrder: "asc",
+};
 
 export const SubscriptionPage = () => {
   const [items, setItems] = useState([]);
@@ -21,24 +38,8 @@ export const SubscriptionPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filtersDraft, setFiltersDraft] = useState({
-    name: "",
-    type: "",
-    isActive: "",
-    fromDate: "",
-    toDate: "",
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  });
-  const [filters, setFilters] = useState({
-    name: "",
-    type: "",
-    isActive: "",
-    fromDate: "",
-    toDate: "",
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  });
+  const [filtersDraft, setFiltersDraft] = useState(emptyFilters);
+  const [filters, setFilters] = useState(emptyFilters);
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -65,8 +66,10 @@ export const SubscriptionPage = () => {
 
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.name) params.set("name", filters.name);
-    if (filters.type) params.set("type", filters.type);
-    if (filters.isActive !== "") params.set("isActive", String(filters.isActive));
+    if (filters.tier) params.set("tier", filters.tier);
+    if (filters.trimester) params.set("trimester", filters.trimester);
+    if (filters.isActive !== "")
+      params.set("isActive", String(filters.isActive));
     if (filters.fromDate) params.set("fromDate", filters.fromDate);
     if (filters.toDate) params.set("toDate", filters.toDate);
     if (filters.sortBy) params.set("sortBy", filters.sortBy);
@@ -78,7 +81,8 @@ export const SubscriptionPage = () => {
     pagination.limit,
     debouncedSearch,
     filters.name,
-    filters.type,
+    filters.tier,
+    filters.trimester,
     filters.isActive,
     filters.fromDate,
     filters.toDate,
@@ -99,9 +103,8 @@ export const SubscriptionPage = () => {
     filters,
   ]);
 
-  const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteMutation(
-    API_ENDPOINTS.SUBSCRIPTIONS.DELETE,
-  );
+  const { mutate: deleteSubscription, isPending: isDeleting } =
+    useDeleteMutation(API_ENDPOINTS.SUBSCRIPTIONS.DELETE);
 
   useEffect(() => {
     const paged = subscriptionsData?.data;
@@ -122,37 +125,66 @@ export const SubscriptionPage = () => {
     {
       key: "name",
       title: "Name",
-      render: (row) => <span className="font-medium">{formatGrammer(row.name) || "-"}</span>,
+      render: (row) => (
+        <div>
+          <span className="font-medium">{row.name || "-"}</span>
+          {row.subtitle ? (
+            <p className="text-xs text-gray-500">{row.subtitle}</p>
+          ) : null}
+        </div>
+      ),
     },
     {
-      key: "type",
-      title: "Type",
-      render: (row) => <span className="text-sm">{formatGrammer(row.type) || "-"}</span>,
+      key: "tier",
+      title: "Tier",
+      render: (row) => (
+        <span className="text-sm">{formatGrammer(row.tier) || "-"}</span>
+      ),
     },
     {
       key: "price",
-      title: "Price",
-      render: (row) => <span className="text-sm">{typeof row.price === "number" ? row.price : "-"}</span>,
+      title: "Starting Price",
+      render: (row) => (
+        <span className="text-sm">{formatPrice(row.price)}</span>
+      ),
+    },
+    {
+      key: "plans",
+      title: "Trimester Plans",
+      render: (row) => {
+        if (!row.plans?.length) return <span className="text-sm">-</span>;
+
+        return (
+          <div className="text-xs text-gray-600 space-y-0.5">
+            {row.plans.map((plan) => (
+              <div key={plan.trimester}>
+                {TRIMESTER_LABELS[plan.trimester] || plan.trimester}:{" "}
+                <span className="font-medium text-gray-800">
+                  {formatPrice(plan.price)}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: "durationInDays",
       title: "Duration (Days)",
       render: (row) => (
-        <span className="text-sm">{typeof row.durationInDays === "number" ? row.durationInDays : "-"}</span>
+        <span className="text-sm">
+          {typeof row.durationInDays === "number" ? row.durationInDays : "-"}
+        </span>
       ),
     },
     {
       key: "isActive",
       title: "Status",
       render: (row) => (
-        <span className="text-sm text-gray-800">{row?.isActive ? "Active" : "Inactive"}</span>
+        <span className="text-sm text-gray-800">
+          {row?.isActive ? "Active" : "Inactive"}
+        </span>
       ),
-    },
-    {
-      key: "createdAt",
-      title: "Created At",
-      render: (row) =>
-        row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "N/A",
     },
     {
       key: "updatedAt",
@@ -172,7 +204,8 @@ export const SubscriptionPage = () => {
   };
 
   const handleDelete = (row) => {
-    if (!window.confirm("Are you sure you want to delete this subscription?")) return;
+    if (!window.confirm("Are you sure you want to delete this subscription?"))
+      return;
 
     deleteSubscription(row._id, {
       onSuccess: (res) => {
@@ -212,24 +245,8 @@ export const SubscriptionPage = () => {
   const clearAllFilters = () => {
     setSearchInput("");
     setDebouncedSearch("");
-    setFilters({
-      name: "",
-      type: "",
-      isActive: "",
-      fromDate: "",
-      toDate: "",
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    });
-    setFiltersDraft({
-      name: "",
-      type: "",
-      isActive: "",
-      fromDate: "",
-      toDate: "",
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    });
+    setFilters(emptyFilters);
+    setFiltersDraft(emptyFilters);
   };
 
   if (isLoading) {
@@ -282,6 +299,13 @@ export const SubscriptionPage = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
+            onClick={() => navigate("/packages")}
+            className="inline-flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            View as cards
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setFiltersDraft(filters);
               setFilterOpen(true);
@@ -319,25 +343,47 @@ export const SubscriptionPage = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600">Type</label>
+              <label className="text-xs font-medium text-gray-600">Tier</label>
               <select
-                value={filtersDraft.type}
+                value={filtersDraft.tier}
                 onChange={(e) =>
-                  setFiltersDraft((p) => ({ ...p, type: e.target.value }))
+                  setFiltersDraft((p) => ({ ...p, tier: e.target.value }))
                 }
                 className="mt-1 w-full border rounded px-2 py-2 text-sm"
               >
                 <option value="">Any</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="half_yearly">Half Yearly</option>
-                <option value="yearly">Yearly</option>
+                {TIER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600">Is Active</label>
+              <label className="text-xs font-medium text-gray-600">
+                Has plan for
+              </label>
+              <select
+                value={filtersDraft.trimester}
+                onChange={(e) =>
+                  setFiltersDraft((p) => ({ ...p, trimester: e.target.value }))
+                }
+                className="mt-1 w-full border rounded px-2 py-2 text-sm"
+              >
+                <option value="">Any trimester</option>
+                {Object.values(PLAN_TRIMESTERS).map((value) => (
+                  <option key={value} value={value}>
+                    {TRIMESTER_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">
+                Is Active
+              </label>
               <select
                 value={filtersDraft.isActive}
                 onChange={(e) =>
@@ -352,7 +398,9 @@ export const SubscriptionPage = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600">From Date</label>
+              <label className="text-xs font-medium text-gray-600">
+                From Date
+              </label>
               <input
                 type="date"
                 value={filtersDraft.fromDate}
@@ -364,7 +412,9 @@ export const SubscriptionPage = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600">To Date</label>
+              <label className="text-xs font-medium text-gray-600">
+                To Date
+              </label>
               <input
                 type="date"
                 value={filtersDraft.toDate}
@@ -385,6 +435,7 @@ export const SubscriptionPage = () => {
                   }
                   className="w-full border rounded px-2 py-2 text-sm"
                 >
+                  <option value="displayOrder">Display Order</option>
                   <option value="createdAt">Created At</option>
                   <option value="updatedAt">Updated At</option>
                   <option value="name">Name</option>
@@ -393,12 +444,15 @@ export const SubscriptionPage = () => {
                 <select
                   value={filtersDraft.sortOrder}
                   onChange={(e) =>
-                    setFiltersDraft((p) => ({ ...p, sortOrder: e.target.value }))
+                    setFiltersDraft((p) => ({
+                      ...p,
+                      sortOrder: e.target.value,
+                    }))
                   }
                   className="w-full border rounded px-2 py-2 text-sm"
                 >
-                  <option value="desc">Desc</option>
                   <option value="asc">Asc</option>
+                  <option value="desc">Desc</option>
                 </select>
               </div>
             </div>
@@ -407,17 +461,7 @@ export const SubscriptionPage = () => {
           <div className="mt-4 flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => {
-                setFiltersDraft({
-                  name: "",
-                  type: "",
-                  isActive: "",
-                  fromDate: "",
-                  toDate: "",
-                  sortBy: "createdAt",
-                  sortOrder: "desc",
-                });
-              }}
+              onClick={() => setFiltersDraft(emptyFilters)}
               className="px-4 py-2 rounded border text-sm hover:bg-gray-50"
             >
               Reset
@@ -438,7 +482,7 @@ export const SubscriptionPage = () => {
 
       <Table
         title="Subscriptions"
-        addButtonText="Create New Subscription"
+        addButtonText="Create New Package"
         columns={columns}
         data={items}
         onAddNew={handleAddNew}

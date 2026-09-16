@@ -48,6 +48,39 @@ module.exports = {
     Family: "family",
   }),
 
+  SUBSCRIPTION_TIERS: Object.freeze({
+    BASIC: "basic",
+    PRO: "pro",
+    ELITE: "elite",
+    BONUS: "bonus",
+  }),
+
+  // Only one live package may exist per core tier; bonus add-ons are many.
+  CORE_SUBSCRIPTION_TIERS: Object.freeze(["basic", "pro", "elite"]),
+
+  PLAN_TRIMESTERS: Object.freeze({
+    ALL: "all",
+    FIRST: "first",
+    SECOND: "second",
+    THIRD: "third",
+  }),
+
+  TRIMESTER_LABELS: Object.freeze({
+    all: "All Trimesters",
+    first: "First Trimester",
+    second: "Second Trimester",
+    third: "Third Trimester",
+  }),
+
+  // Days of the journey still left when a mother joins in that trimester,
+  // which is what a trimester plan actually covers.
+  TRIMESTER_DURATION_DAYS: Object.freeze({
+    all: 90,
+    first: 270,
+    second: 180,
+    third: 90,
+  }),
+
   PRODUCT_TYPES: Object.freeze({
     GROCERY: "grocery",
     ELECTRONICS: "electronics",

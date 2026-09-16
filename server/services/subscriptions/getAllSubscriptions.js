@@ -7,12 +7,14 @@ exports.getAllSubscriptions = async (query) => {
     limit,
     search,
     name,
+    tier,
+    trimester,
     type,
     isActive,
     fromDate,
     toDate,
-    sortBy = "createdAt",
-    sortOrder = "desc",
+    sortBy = "displayOrder",
+    sortOrder = "asc",
   } = query;
 
   page = page ? Number(page) : 1;
@@ -24,12 +26,15 @@ exports.getAllSubscriptions = async (query) => {
     match.isActive = isActive === "true" || isActive === true;
   }
 
+  if (tier) match.tier = tier;
+  if (trimester) match["plans.trimester"] = trimester;
   if (type) match.type = type;
   if (name) match.name = { $regex: new RegExp(name, "i") };
 
   if (search) {
     match.$or = [
       { name: { $regex: new RegExp(search, "i") } },
+      { subtitle: { $regex: new RegExp(search, "i") } },
       { description: { $regex: new RegExp(search, "i") } },
     ];
   }
@@ -46,8 +51,9 @@ exports.getAllSubscriptions = async (query) => {
 
   const pipeline = [{ $match: match }];
 
-  const sortStage = {};
-  sortStage[sortBy] = sortOrder === "asc" ? 1 : -1;
+  const sortStage = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+  // displayOrder ties (0 for legacy records) fall back to newest first
+  if (sortBy === "displayOrder") sortStage.createdAt = -1;
   pipeline.push({ $sort: sortStage });
 
   return await pagination(Subscription, pipeline, page, limit);
