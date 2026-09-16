@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "nodemon index",
     "start": "node index",
+    "seed:subscriptions": "node scripts/seedSubscriptions.js",
+    "seed:clinic": "node scripts/seedClinicData.js",
+    "seed:prenatal": "node scripts/seedPrenatalCares.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
