@@ -23,8 +23,10 @@ exports.getAllPatients = async (query) => {
     if (search) {
         match.$or = [
             { fullName: { $regex: new RegExp(search, "i") } },
+            { husbandOrParentName: { $regex: new RegExp(search, "i") } },
             { email: { $regex: new RegExp(search, "i") } },
             { phone: { $regex: new RegExp(search, "i") } },
+            { whatsappNumber: { $regex: new RegExp(search, "i") } },
         ];
     }
     if (fromDate || toDate) {

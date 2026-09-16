@@ -29,6 +29,8 @@ const patientSchema = new mongoose.Schema(
     },
     // Personal Details
     fullName: { type: String, trim: true },
+    husbandOrParentName: { type: String, trim: true },
+    profession: { type: String, trim: true }, // e.g. "Housewife", "Teacher"
     dateOfBirth: { type: String },
     age: { type: Number },
     bloodGroup: { type: String },
@@ -40,6 +42,7 @@ const patientSchema = new mongoose.Schema(
       trim: true,
     },
     phone: { type: String },
+    whatsappNumber: { type: String },
     address: { type: String },
 
     // Obstetric History
@@ -77,6 +80,10 @@ const patientSchema = new mongoose.Schema(
       phone: { type: String },
       address: { type: String },
     },
+    // Garbhsanskar Background (asked while onboarding the patient)
+    heardAboutGarbhsanskar: { type: String }, // "Yes" / "No"
+    expectationsFromHiranyagarbha: { type: String },
+
     image: { type: String },
     // Status Flags
     isProfileCompleted: { type: Boolean, default: false },

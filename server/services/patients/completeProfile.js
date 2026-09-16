@@ -16,6 +16,8 @@ exports.completeProfile = async (userId, data, image) => {
   // Merge top-level or nested personalDetails
   if (data.personalDetails) {
     if (data.personalDetails.fullName !== undefined) patient.fullName = data.personalDetails.fullName;
+    if (data.personalDetails.husbandOrParentName !== undefined) patient.husbandOrParentName = data.personalDetails.husbandOrParentName;
+    if (data.personalDetails.profession !== undefined) patient.profession = data.personalDetails.profession;
     if (data.personalDetails.dateOfBirth !== undefined) patient.dateOfBirth = data.personalDetails.dateOfBirth;
     if (data.personalDetails.age !== undefined) patient.age = data.personalDetails.age;
     if (data.personalDetails.bloodGroup !== undefined) patient.bloodGroup = data.personalDetails.bloodGroup;
@@ -23,10 +25,13 @@ exports.completeProfile = async (userId, data, image) => {
     if (data.personalDetails.weight !== undefined) patient.weight = data.personalDetails.weight;
     if (data.personalDetails.email !== undefined) patient.email = data.personalDetails.email;
     if (data.personalDetails.phone !== undefined) patient.phone = data.personalDetails.phone;
+    if (data.personalDetails.whatsappNumber !== undefined) patient.whatsappNumber = data.personalDetails.whatsappNumber;
     if (data.personalDetails.address !== undefined) patient.address = data.personalDetails.address;
   }
 
   if (data.fullName !== undefined) patient.fullName = data.fullName;
+  if (data.husbandOrParentName !== undefined) patient.husbandOrParentName = data.husbandOrParentName;
+  if (data.profession !== undefined) patient.profession = data.profession;
   if (data.dateOfBirth !== undefined) patient.dateOfBirth = data.dateOfBirth;
   if (data.age !== undefined) patient.age = data.age;
   if (data.bloodGroup !== undefined) patient.bloodGroup = data.bloodGroup;
@@ -34,6 +39,7 @@ exports.completeProfile = async (userId, data, image) => {
   if (data.weight !== undefined) patient.weight = data.weight;
   if (data.email !== undefined) patient.email = data.email;
   if (data.phone !== undefined) patient.phone = data.phone;
+  if (data.whatsappNumber !== undefined) patient.whatsappNumber = data.whatsappNumber;
   if (data.address !== undefined) patient.address = data.address;
 
   // Merge obstetricHistory
@@ -62,6 +68,10 @@ exports.completeProfile = async (userId, data, image) => {
   // Doctor Details
   if (data.primaryDoctor !== undefined) patient.primaryDoctor = data.primaryDoctor || null;
   if (data.doctorDetails !== undefined) patient.doctorDetails = { ...patient.doctorDetails, ...data.doctorDetails };
+
+  // Garbhsanskar background
+  if (data.heardAboutGarbhsanskar !== undefined) patient.heardAboutGarbhsanskar = data.heardAboutGarbhsanskar;
+  if (data.expectationsFromHiranyagarbha !== undefined) patient.expectationsFromHiranyagarbha = data.expectationsFromHiranyagarbha;
 
   // Language & Emergency Contact
   if (data.preferredLanguage !== undefined) patient.preferredLanguage = data.preferredLanguage;

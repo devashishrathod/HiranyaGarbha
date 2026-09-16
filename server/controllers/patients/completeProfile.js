@@ -13,5 +13,10 @@ exports.completeProfile = asyncWrapper(async (req, res) => {
   if (error) throwError(422, cleanJoiError(error));
   const image = req.files?.image;
   const patient = await completeProfile(userId, value, image);
-  return sendSuccess(res, 200, "Patient profile completed successfully", patient);
+  return sendSuccess(
+    res,
+    200,
+    "Patient profile completed successfully",
+    patient,
+  );
 });
