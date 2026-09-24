@@ -2412,6 +2412,344 @@
       ]
     },
     {
+      "name": "PatientSubscriptions",
+      "description": "Patient purchase flow: preview a plan, pay for it through Razorpay, and read what is held. Every request takes the patient from the JWT - none of them accepts a patientId or an amount in the body. See docs/SUBSCRIPTIONS.md.",
+      "item": [
+        {
+          "name": "preview (quote a plan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"packageId\": \"<Subscription._id from subscriptions/packages>\",\n    \"trimester\": \"second\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/preview",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "preview"
+              ]
+            },
+            "description": "What this purchase would cost, without writing anything. Returns listPrice, any prorated credit from the running plan, and amountPayable. Same code path as checkout, so the quote cannot drift from the charge."
+          },
+          "response": []
+        },
+        {
+          "name": "checkout (create razorpay order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Hand the order id to the verify request below.",
+                  "const data = pm.response.json()?.data;",
+                  "",
+                  "if (data?.razorpay?.orderId) {",
+                  "  pm.collectionVariables.set(\"Hiranya-razorpayOrderId\", data.razorpay.orderId);",
+                  "  console.log(\"order:\", data.razorpay.orderId, \"payable:\", data.amountPayable);",
+                  "} else if (data?.status === \"ACTIVE\") {",
+                  "  console.log(\"free plan activated, no payment needed:\", data.subscriptionNumber);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"packageId\": \"<Subscription._id from subscriptions/packages>\",\n    \"trimester\": \"second\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/checkout",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "checkout"
+              ]
+            },
+            "description": "Prices the plan server-side and opens a Razorpay order. A plan that costs nothing (free Basic, or a credit that covers the whole upgrade) comes back already ACTIVE with razorpay: null - check for that instead of always opening the checkout popup.\n\n503 means RAZORPAY_KEY_ID / RAZORPAY_SECRET are not set."
+          },
+          "response": []
+        },
+        {
+          "name": "verify (client callback)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"razorpayOrderId\": \"{{Hiranya-razorpayOrderId}}\",\n    \"razorpayPaymentId\": \"pay_xxxxxxxxxxxxxx\",\n    \"razorpaySignature\": \"<razorpay_signature from the checkout handler>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/verify",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "verify"
+              ]
+            },
+            "description": "Verifies the signature the browser received so the success screen does not have to poll.\n\nA convenience, not the authority: the webhook is what guarantees a patient who closed the tab still gets their plan. Returns PENDING_PAYMENT if neither has landed yet."
+          },
+          "response": []
+        },
+        {
+          "name": "my (active plan)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/my",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "my"
+              ]
+            },
+            "description": "The active package, any active bonus courses, and any unfinished checkouts. Each row carries daysRemaining, inGrace and hasAccess so the client does not recompute them."
+          },
+          "response": []
+        },
+        {
+          "name": "my/history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/my/history",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "my",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "PENDING_PAYMENT | ACTIVE | SCHEDULED | EXPIRED | CANCELLED | UPGRADED | REFUNDED",
+                  "disabled": true
+                },
+                {
+                  "key": "kind",
+                  "value": "PACKAGE",
+                  "description": "PACKAGE | BONUS",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every subscription this patient has ever held, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "my/entitlement",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}patient-subscriptions/my/entitlement",
+              "host": [
+                "{{Hiranya-baseUrl}}patient-subscriptions"
+              ],
+              "path": [
+                "my",
+                "entitlement"
+              ]
+            },
+            "description": "The lightweight check for gating content: hasActivePlan, tier, isPaid, daysRemaining, inGrace and the ids of any bonus courses held. One indexed query, no joins."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "description": "Called by Razorpay, not by us. Mounted before express.json() so the raw bytes survive for the HMAC - see docs/SUBSCRIPTIONS.md section 6.",
+      "item": [
+        {
+          "name": "razorpay (payment.captured)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sign the body the way Razorpay does, so this request can be",
+                  "// replayed locally without the dashboard.",
+                  "const secret =",
+                  "  pm.environment.get(\"Hiranya-razorpayWebhookSecret\") ||",
+                  "  pm.collectionVariables.get(\"Hiranya-razorpayWebhookSecret\") ||",
+                  "  \"test_webhook_secret\";",
+                  "",
+                  "const signature = CryptoJS.HmacSHA256(",
+                  "  pm.request.body.raw,",
+                  "  secret,",
+                  ").toString(CryptoJS.enc.Hex);",
+                  "",
+                  "pm.request.headers.upsert({ key: \"x-razorpay-signature\", value: signature });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"event\": \"payment.captured\",\n    \"payload\": {\n        \"payment\": {\n            \"entity\": {\n                \"id\": \"pay_test_0000000000\",\n                \"order_id\": \"{{Hiranya-razorpayOrderId}}\",\n                \"amount\": 999900,\n                \"currency\": \"INR\",\n                \"method\": \"upi\",\n                \"status\": \"captured\"\n            }\n        }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}webhooks/razorpay",
+              "host": [
+                "{{Hiranya-baseUrl}}webhooks"
+              ],
+              "path": [
+                "razorpay"
+              ]
+            },
+            "description": "The source of truth for a paid plan. The pre-request script signs the body with Hiranya-razorpayWebhookSecret (falls back to test_webhook_secret), so editing the body keeps the signature valid.\n\nNotes:\n- amount is in PAISE and must match the subscription's amountPayable, or the event is logged and held for review rather than activating anything.\n- order_id must be one that exists; run checkout first to populate Hiranya-razorpayOrderId.\n- Sending the same payment id twice is a no-op, which is the duplicate-delivery guard doing its job.\n- Other handled events: payment.failed, refund.processed."
+          },
+          "response": []
+        },
+        {
+          "name": "razorpay (payment.failed)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret =",
+                  "  pm.environment.get(\"Hiranya-razorpayWebhookSecret\") ||",
+                  "  pm.collectionVariables.get(\"Hiranya-razorpayWebhookSecret\") ||",
+                  "  \"test_webhook_secret\";",
+                  "",
+                  "const signature = CryptoJS.HmacSHA256(",
+                  "  pm.request.body.raw,",
+                  "  secret,",
+                  ").toString(CryptoJS.enc.Hex);",
+                  "",
+                  "pm.request.headers.upsert({ key: \"x-razorpay-signature\", value: signature });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"event\": \"payment.failed\",\n    \"payload\": {\n        \"payment\": {\n            \"entity\": {\n                \"id\": \"pay_test_failed_0001\",\n                \"order_id\": \"{{Hiranya-razorpayOrderId}}\",\n                \"amount\": 999900,\n                \"currency\": \"INR\",\n                \"method\": \"card\",\n                \"error_description\": \"Card declined by issuing bank\"\n            }\n        }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}webhooks/razorpay",
+              "host": [
+                "{{Hiranya-baseUrl}}webhooks"
+              ],
+              "path": [
+                "razorpay"
+              ]
+            },
+            "description": "Records the failed attempt and marks paymentStatus FAILED. The subscription deliberately stays PENDING_PAYMENT so the patient can retry the same checkout."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "PrenatalCares",
       "item": [
         {
