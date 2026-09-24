@@ -12,7 +12,7 @@ Three separate features need to send notifications:
 
 1. **Admin broadcast** — one update to a role, a filtered segment or a hand-picked list.
 2. **Appointments** — booked / confirmed / rescheduled / cancelled / reminder, to **both** the patient and the doctor.
-3. **Subscriptions** — activated / expiring / expired / cancelled, to the patient.
+3. **Subscriptions** — activated / renewed / expiring / expired / cancelled, to the patient. Activation is live; see [SUBSCRIPTIONS.md](./SUBSCRIPTIONS.md).
 
 If each of those grows its own sending code, we end up with three copies of "look up the user, find their FCM token, build a payload, catch the error so the booking does not fail". This document defines **one** delivery layer that all three call, and the order in which they get built.
 
@@ -410,17 +410,23 @@ Called from `services/appointments/*` wrapped in `sendQuietly()` — **a notific
 
 Reminder times are computed in `Asia/Kolkata` (`moment-timezone` is already a dependency), matching how appointment slots are stored.
 
-### Phase 3 — Subscriptions
+### Phase 3 — Subscriptions *(started)*
 
-| Event | Type | Trigger |
-|---|---|---|
-| activated | `SUBSCRIPTION_ACTIVATED` | payment verified |
-| expiring in 7 / 3 / 1 days | `SUBSCRIPTION_EXPIRING` | daily job, `dedupeKey` per day-bucket |
-| expired | `SUBSCRIPTION_EXPIRED` | daily job |
-| cancelled | `SUBSCRIPTION_CANCELLED` | user or admin action |
-| renewed | `SUBSCRIPTION_RENEWED` | payment verified |
+| Event | Type | Trigger | Status |
+|---|---|---|---|
+| activated | `SUBSCRIPTION_ACTIVATED` | payment captured, or a free / granted plan | ✅ done |
+| renewed | `SUBSCRIPTION_RENEWED` | renewal payment captured | with the lifecycle phase |
+| cancelled | `SUBSCRIPTION_CANCELLED` | user or admin action | with the lifecycle phase |
+| expiring in 7 / 3 / 1 days | `SUBSCRIPTION_EXPIRING` | daily job, `dedupeKey` per day-bucket | with the jobs phase |
+| expired | `SUBSCRIPTION_EXPIRED` | daily job | with the jobs phase |
 
-Same shape: `helpers/notifications/subscriptionNotices.js`, thin wrappers over `notify()`.
+Same shape as phase 2: `helpers/notifications/subscriptionNotices.js`, thin wrappers over `notify()`, called from `services/patientSubscriptions/*` inside `sendQuietly()`.
+
+`SUBSCRIPTION_ACTIVATED` is the one notice in the system that sets `email: true` — a paid purchase deserves a receipt the patient can keep, carrying the plan, the amount and the validity window.
+
+⚠️ Backfills pass `notify: false`. Granting a plan a patient should have had all along is bookkeeping, not news; without the flag, a backfill mails every existing patient at once. See `scripts/backfillFreeBasic.js`.
+
+The remaining rows and the phasing behind them live in [SUBSCRIPTIONS.md](./SUBSCRIPTIONS.md) §9.
 
 ### Phase 4 — SMS & WhatsApp
 
@@ -486,6 +492,7 @@ server/
 │       ├── resolveAudience.js            declarative target → user list
 │       ├── renderTemplate.js             merge tags
 │       ├── sendQuietly.js                swallow + log, for domain callers
+│       ├── subscriptionNotices.js        phase 3 wrappers (activated)
 │       └── index.js                      the public barrel
 ├── services/notifications/               campaign lifecycle, feed, devices, templates
 ├── controllers/notifications/            thin, one file per action
