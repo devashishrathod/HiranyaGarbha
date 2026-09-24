@@ -9,6 +9,7 @@
     "seed:subscriptions": "node scripts/seedSubscriptions.js",
     "seed:clinic": "node scripts/seedClinicData.js",
     "seed:prenatal": "node scripts/seedPrenatalCares.js",
+    "backfill:free-basic": "node scripts/backfillFreeBasic.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -34,6 +35,7 @@
     "morgan": "^1.11.0",
     "nodemailer": "^9.0.3",
     "nodemon": "^3.1.14",
+    "razorpay": "^2.9.8",
     "validator": "^13.15.35"
   }
 }

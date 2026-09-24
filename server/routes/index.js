@@ -5,10 +5,20 @@ const express = require("express");
 const router = express.Router();
 const routesDir = __dirname;
 
+/*
+ * Mounted by hand in index.js instead, BEFORE express.json().
+ *
+ * The Razorpay signature is an HMAC over the raw request bytes, and anything
+ * mounted through this auto-loader has already been through the JSON parser by
+ * the time it runs. See docs/SUBSCRIPTIONS.md section 6.
+ */
+const MOUNTED_EARLY = new Set(["webhooks.js"]);
+
 fs.readdirSync(routesDir).forEach((file) => {
   const fullPath = path.join(routesDir, file);
   if (
     file !== "index.js" &&
+    !MOUNTED_EARLY.has(file) &&
     file.endsWith(".js") &&
     fs.statSync(fullPath).isFile()
   ) {
