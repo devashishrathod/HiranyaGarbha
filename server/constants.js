@@ -129,4 +129,118 @@ module.exports = {
     BANNER:
       "https://media.istockphoto.com/id/1370679896/photo/the-concept-of-protecting-and-supporting-the-human-fetus.jpg?s=2048x2048&w=is&k=20&c=lWel8Fu0yuIjT20iIYUbdA0WneA26PUfUE-Dp9hpBbs=",
   }),
+
+  /* ------------------------------------------------------------------ */
+  /* Notifications — see docs/NOTIFICATIONS.md                           */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Which feed a notification belongs in. Derived from the recipient's
+   * `User.role`, so the patient app and the doctor app each query their own
+   * feed without the sender having to split a mixed audience.
+   */
+  NOTIFICATION_AUDIENCE: Object.freeze({
+    PATIENT: "PATIENT",
+    DOCTOR: "DOCTOR",
+    STAFF: "STAFF",
+    ADMIN: "ADMIN",
+  }),
+
+  NOTIFICATION_CHANNELS: Object.freeze({
+    IN_APP: "IN_APP",
+    PUSH: "PUSH",
+    EMAIL: "EMAIL",
+    SMS: "SMS",
+    WHATSAPP: "WHATSAPP",
+  }),
+
+  /** Channels phase 1 can actually deliver on. SMS/WhatsApp land in phase 4. */
+  ACTIVE_NOTIFICATION_CHANNELS: Object.freeze(["IN_APP", "PUSH", "EMAIL"]),
+
+  /**
+   * Every kind of notification the platform can send.
+   *
+   * The appointment and subscription entries are declared now although only
+   * `ANNOUNCEMENT` is used in phase 1: the enum is what the `Notification`
+   * model validates against, and a type added later without a migration would
+   * fail to save on a live database.
+   */
+  NOTIFICATION_TYPES: Object.freeze({
+    // Admin-composed broadcast. Deliberately generic — not tied to any domain,
+    // so the same path serves patients, doctors and any role added later.
+    ANNOUNCEMENT: "ANNOUNCEMENT",
+
+    // ---- appointments (phase 2), sent to both patient and doctor ----
+    APPOINTMENT_BOOKED: "APPOINTMENT_BOOKED",
+    APPOINTMENT_CONFIRMED: "APPOINTMENT_CONFIRMED",
+    APPOINTMENT_RESCHEDULED: "APPOINTMENT_RESCHEDULED",
+    APPOINTMENT_CANCELLED: "APPOINTMENT_CANCELLED",
+    APPOINTMENT_REMINDER: "APPOINTMENT_REMINDER",
+    APPOINTMENT_COMPLETED: "APPOINTMENT_COMPLETED",
+    APPOINTMENT_NO_SHOW: "APPOINTMENT_NO_SHOW",
+
+    // ---- subscriptions (phase 3) ----
+    SUBSCRIPTION_ACTIVATED: "SUBSCRIPTION_ACTIVATED",
+    SUBSCRIPTION_RENEWED: "SUBSCRIPTION_RENEWED",
+    SUBSCRIPTION_EXPIRING: "SUBSCRIPTION_EXPIRING",
+    SUBSCRIPTION_EXPIRED: "SUBSCRIPTION_EXPIRED",
+    SUBSCRIPTION_CANCELLED: "SUBSCRIPTION_CANCELLED",
+
+    // ---- misc ----
+    REPORT_UPLOADED: "REPORT_UPLOADED",
+    SYSTEM: "SYSTEM",
+  }),
+
+  NOTIFICATION_SEVERITY: Object.freeze({
+    INFO: "INFO",
+    SUCCESS: "SUCCESS",
+    WARNING: "WARNING",
+    CRITICAL: "CRITICAL",
+  }),
+
+  /** Lifecycle of an admin broadcast. */
+  CAMPAIGN_STATUS: Object.freeze({
+    SCHEDULED: "SCHEDULED",
+    SENDING: "SENDING",
+    SENT: "SENT",
+    PARTIAL: "PARTIAL",
+    FAILED: "FAILED",
+    CANCELLED: "CANCELLED",
+  }),
+
+  /** How an admin described the audience. Mirrors the compose screen. */
+  AUDIENCE_MODES: Object.freeze({
+    ROLE: "ROLE",
+    SEGMENT: "SEGMENT",
+    MANUAL: "MANUAL",
+    CSV: "CSV",
+  }),
+
+  /** Which profile collection a SEGMENT filter runs against. */
+  AUDIENCE_GROUPS: Object.freeze({
+    PATIENTS: "PATIENTS",
+    DOCTORS: "DOCTORS",
+  }),
+
+  NOTIFICATION_LIMITS: Object.freeze({
+    /**
+     * A broadcast larger than this is almost always a mistargeted filter, so
+     * it is refused with the resolved count rather than silently sent.
+     */
+    MAX_RECIPIENTS_PER_DISPATCH: 10000,
+    // FCM HTTP v1 has no multicast endpoint — one request per token — so a
+    // broadcast to thousands of devices must not open thousands of sockets.
+    PUSH_CONCURRENCY: 25,
+    // Gmail SMTP drops connections above roughly this.
+    EMAIL_CONCURRENCY: 5,
+    // insertMany chunk size, keeps a single write well under the 16MB BSON cap.
+    INSERT_BATCH_SIZE: 1000,
+    // How often the scheduler sweeps for due campaigns.
+    SCHEDULER_INTERVAL_MS: 60000,
+  }),
+
+  NOTIFICATION_DEFAULTS: Object.freeze({
+    maxTitleLength: 150,
+    maxBodyLength: 2000,
+  }),
 };
