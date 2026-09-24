@@ -81,6 +81,57 @@ module.exports = {
     third: 90,
   }),
 
+  /** Lifecycle of a patient's subscription. See docs/SUBSCRIPTIONS.md §5. */
+  SUBSCRIPTION_STATUS: Object.freeze({
+    PENDING_PAYMENT: "PENDING_PAYMENT",
+    ACTIVE: "ACTIVE",
+    SCHEDULED: "SCHEDULED",
+    EXPIRED: "EXPIRED",
+    CANCELLED: "CANCELLED",
+    UPGRADED: "UPGRADED",
+    REFUNDED: "REFUNDED",
+  }),
+
+  SUBSCRIPTION_PAYMENT_STATUS: Object.freeze({
+    NOT_REQUIRED: "NOT_REQUIRED",
+    PENDING: "PENDING",
+    PAID: "PAID",
+    FAILED: "FAILED",
+    REFUNDED: "REFUNDED",
+  }),
+
+  SUBSCRIPTION_SOURCE: Object.freeze({
+    PATIENT: "PATIENT",
+    ADMIN: "ADMIN",
+    SYSTEM: "SYSTEM",
+  }),
+
+  SUBSCRIPTION_KIND: Object.freeze({
+    PACKAGE: "PACKAGE",
+    BONUS: "BONUS",
+  }),
+
+  PAYMENT_ATTEMPT_STATUS: Object.freeze({
+    CREATED: "CREATED",
+    AUTHORIZED: "AUTHORIZED",
+    CAPTURED: "CAPTURED",
+    FAILED: "FAILED",
+    REFUNDED: "REFUNDED",
+  }),
+
+  PAYMENT_PURPOSE: Object.freeze({
+    NEW: "NEW",
+    RENEWAL: "RENEWAL",
+    UPGRADE: "UPGRADE",
+    BONUS: "BONUS",
+  }),
+
+  /** Days a plan stays usable past its endDate while the patient renews. */
+  GRACE_DAYS: 3,
+
+  /** An unpaid checkout is given up on after this long. */
+  CHECKOUT_TIMEOUT_MINUTES: 30,
+
   PRODUCT_TYPES: Object.freeze({
     GROCERY: "grocery",
     ELECTRONICS: "electronics",
