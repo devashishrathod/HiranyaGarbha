@@ -21,6 +21,12 @@ export const CHANNELS = Object.freeze({
 /**
  * `requires` names the recipient field the channel cannot deliver without, so
  * the audience summary can warn about people who would silently be skipped.
+ *
+ * `available: false` marks a channel the server cannot deliver on yet. It is
+ * still listed rather than hidden, because an admin who expects SMS should see
+ * that it is coming and why it is off — a missing option only prompts "where
+ * did SMS go". The server enforces this too (`ACTIVE_NOTIFICATION_CHANNELS`),
+ * so a hand-crafted request cannot slip past the greyed-out button.
  */
 export const CHANNEL_META = {
   [CHANNELS.PUSH]: {
@@ -31,6 +37,7 @@ export const CHANNEL_META = {
     requiresLabel: "a registered device",
     titleLimit: 65,
     bodyLimit: 240,
+    available: true,
   },
   [CHANNELS.IN_APP]: {
     label: "In-app",
@@ -39,6 +46,7 @@ export const CHANNEL_META = {
     requires: null,
     titleLimit: 80,
     bodyLimit: 400,
+    available: true,
   },
   [CHANNELS.EMAIL]: {
     label: "Email",
@@ -48,22 +56,27 @@ export const CHANNEL_META = {
     requiresLabel: "an email address",
     titleLimit: 120,
     bodyLimit: 5000,
+    available: true,
   },
   [CHANNELS.SMS]: {
     label: "SMS",
     tone: "amber",
-    hint: "Plain text, billed per 160-character part",
+    hint: "Needs a DLT-approved sender ID",
     requires: "phone",
     requiresLabel: "a mobile number",
     bodyLimit: 480,
+    available: false,
+    unavailableNote: "Coming with the SMS provider setup",
   },
   [CHANNELS.WHATSAPP]: {
     label: "WhatsApp",
     tone: "green",
-    hint: "Plain text, needs an approved template",
+    hint: "Needs an approved Meta template",
     requires: "whatsappNumber",
     requiresLabel: "a WhatsApp number",
     bodyLimit: 1024,
+    available: false,
+    unavailableNote: "Coming with the WhatsApp Business setup",
   },
 };
 
@@ -250,7 +263,8 @@ export const parseRecipientList = (raw = "") => {
     if (seen.has(key)) return;
     seen.add(key);
 
-    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(token)) {
+    // Each class excludes "." so the parts cannot overlap and backtrack.
+    if (/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(token)) {
       emails.push(token.toLowerCase());
       return;
     }
@@ -267,7 +281,80 @@ export const parseRecipientList = (raw = "") => {
   return { emails, phones, invalid, total: emails.length + phones.length };
 };
 
-/** Placeholders the backend is expected to substitute per recipient */
+/**
+ * Turn the compose screen's audience state into the declarative target the
+ * server expects (`server/helpers/notifications/resolveAudience.js`).
+ *
+ * ⚠️ Only the keys for the active mode are sent. The server validates the
+ * audience per mode and **forbids** the others, so shipping an empty `roles`
+ * array alongside a MANUAL send is a 422 rather than a harmless extra field.
+ */
+export const buildAudienceTarget = (state) => {
+  switch (state.mode) {
+    case AUDIENCE_MODES.ROLE:
+      return {
+        mode: state.mode,
+        roles: state.groups.map((key) => getAudienceGroup(key).role),
+      };
+
+    case AUDIENCE_MODES.SEGMENT:
+      return {
+        mode: state.mode,
+        segment: {
+          group: state.segmentGroup,
+          // "" means "active and inactive" — the key is omitted entirely so
+          // the server does not filter on it.
+          ...(state.segment.status !== ""
+            ? { isActive: state.segment.status === "true" }
+            : {}),
+          ...(state.segment.search ? { search: state.segment.search } : {}),
+          ...(state.segment.fromDate ? { fromDate: state.segment.fromDate } : {}),
+          ...(state.segment.toDate ? { toDate: state.segment.toDate } : {}),
+        },
+      };
+
+    case AUDIENCE_MODES.MANUAL:
+      return {
+        mode: state.mode,
+        /**
+         * The picker lists profile rows, so `_id` is a Patient or Doctor id.
+         * Notifications are addressed to the **account**, which is `userId` —
+         * sending the profile id would resolve to nobody and the campaign
+         * would report an empty audience with no obvious cause.
+         */
+        userIds: state.selected.map((person) => person.userId).filter(Boolean),
+      };
+
+    case AUDIENCE_MODES.CSV: {
+      const parsed = parseRecipientList(state.csv);
+      return {
+        mode: state.mode,
+        contacts: { emails: parsed.emails, phones: parsed.phones },
+      };
+    }
+
+    default:
+      return { mode: state.mode };
+  }
+};
+
+/** True when the audience state has enough in it to be worth asking about. */
+export const hasAudienceInput = (state) => {
+  switch (state.mode) {
+    case AUDIENCE_MODES.ROLE:
+      return state.groups.length > 0;
+    case AUDIENCE_MODES.SEGMENT:
+      return Boolean(state.segmentGroup);
+    case AUDIENCE_MODES.MANUAL:
+      return state.selected.some((person) => person.userId);
+    case AUDIENCE_MODES.CSV:
+      return parseRecipientList(state.csv).total > 0;
+    default:
+      return false;
+  }
+};
+
+/** Placeholders the backend substitutes per recipient */
 export const MERGE_TAGS = [
   { tag: "{{name}}", label: "Recipient name" },
   { tag: "{{firstName}}", label: "First name" },

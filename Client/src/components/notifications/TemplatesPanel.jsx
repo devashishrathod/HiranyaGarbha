@@ -2,7 +2,15 @@ import { useState } from "react";
 import { BookmarkPlus, FileText, Trash2, Wand2 } from "lucide-react";
 
 import { CHANNEL_META } from "../../constants/notification";
-import { Button, EmptyState, Input, Modal, Pill, Textarea } from "../UI/kit";
+import {
+  Button,
+  EmptyState,
+  Input,
+  Modal,
+  Pill,
+  SkeletonRows,
+  Textarea,
+} from "../UI/kit";
 
 /**
  * Saved copy an admin can drop straight into the composer. Saving pulls the
@@ -14,6 +22,9 @@ const TemplatesPanel = ({
   onUse,
   onSave,
   onDelete,
+  isLoading = false,
+  isSaving = false,
+  deletingId = null,
 }) => {
   const [saveOpen, setSaveOpen] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
@@ -28,16 +39,21 @@ const TemplatesPanel = ({
   };
 
   const submit = () => {
-    onSave({
-      _id: `tpl_${Date.now()}`,
-      name: form.name.trim() || "Untitled template",
-      description: form.description.trim(),
-      channels: draft.channels,
-      title: draft.title,
-      body: draft.body || draft.smsBody,
-      audienceHint: "Saved from the composer",
-    });
-    setSaveOpen(false);
+    onSave(
+      {
+        name: form.name.trim() || "Untitled template",
+        description: form.description.trim(),
+        channels: draft.channels,
+        title: draft.title,
+        body: draft.body || draft.smsBody,
+        subject: draft.subject,
+        emailBody: draft.emailBody,
+        audienceHint: "Saved from the composer",
+      },
+      // Closing only once the server has accepted it means a failed save keeps
+      // the typed name on screen instead of throwing it away.
+      () => setSaveOpen(false),
+    );
   };
 
   return (
@@ -61,13 +77,17 @@ const TemplatesPanel = ({
         </Button>
       </div>
 
-      {!templates.length ? (
+      {isLoading ? <SkeletonRows rows={3} /> : null}
+
+      {!isLoading && !templates.length ? (
         <EmptyState
           icon={FileText}
           title="No templates yet"
           message="Write a notification in the compose tab and save it here to re-use later."
         />
-      ) : (
+      ) : null}
+
+      {!isLoading && templates.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((template) => (
             <article
@@ -86,15 +106,16 @@ const TemplatesPanel = ({
                 <button
                   type="button"
                   title="Delete template"
+                  disabled={deletingId === template._id}
                   onClick={() => onDelete(template)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
                 >
                   <Trash2 size={15} />
                 </button>
               </div>
 
               <div className="mt-3 flex flex-wrap gap-1">
-                {template.channels.map((key) => (
+                {(template.channels || []).map((key) => (
                   <Pill key={key} tone={CHANNEL_META[key]?.tone}>
                     {CHANNEL_META[key]?.label || key}
                   </Pill>
@@ -125,7 +146,7 @@ const TemplatesPanel = ({
             </article>
           ))}
         </div>
-      )}
+      ) : null}
 
       <Modal
         open={saveOpen}
@@ -138,7 +159,11 @@ const TemplatesPanel = ({
             <Button variant="secondary" onClick={() => setSaveOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={!form.name.trim()}>
+            <Button
+              onClick={submit}
+              loading={isSaving}
+              disabled={!form.name.trim()}
+            >
               Save template
             </Button>
           </>

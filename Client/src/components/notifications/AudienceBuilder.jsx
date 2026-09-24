@@ -1,9 +1,14 @@
 import { useEffect, useMemo } from "react";
-import { AlertTriangle, ClipboardList, Filter, ListChecks, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardList,
+  Filter,
+  ListChecks,
+  Users,
+} from "lucide-react";
 
-import { useGetQuery } from "../../api/apiCall";
+import { usePostQuery } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
-import { buildQuery } from "../../utils/ids";
 import {
   AUDIENCE_GROUPS,
   AUDIENCE_MODES,
@@ -11,7 +16,8 @@ import {
   DEFAULT_SEGMENT,
   LISTABLE_GROUPS,
   SEGMENT_STATUS_OPTIONS,
-  getAudienceGroup,
+  buildAudienceTarget,
+  hasAudienceInput,
   parseRecipientList,
 } from "../../constants/notification";
 import { Input, Pill, Select, Textarea } from "../UI/kit";
@@ -24,135 +30,92 @@ const MODE_ICONS = {
   [AUDIENCE_MODES.CSV]: ClipboardList,
 };
 
-const GROUP_ENDPOINTS = {
-  PATIENTS: API_ENDPOINTS.PATIENTS.GET_ALL,
-  DOCTORS: API_ENDPOINTS.DOCTORS.GET_ALL,
-};
-
-/** `limit=1` is the cheapest way to read a list endpoint's `total` */
-const countEndpoint = (group, params = {}) =>
-  `${GROUP_ENDPOINTS[group]}${buildQuery({ page: 1, limit: 1, ...params })}`;
-
 const AudienceBuilder = ({ value, onChange, onResolve }) => {
   const patch = (changes) => onChange({ ...value, ...changes });
 
-  /* Live totals for the two lists that already have an endpoint */
-  const { data: patientCountData, isLoading: loadingPatients } = useGetQuery(
-    countEndpoint("PATIENTS"),
-    ["notification-count", "PATIENTS"],
-  );
-  const { data: doctorCountData, isLoading: loadingDoctors } = useGetQuery(
-    countEndpoint("DOCTORS"),
-    ["notification-count", "DOCTORS"],
-  );
+  const target = useMemo(() => buildAudienceTarget(value), [value]);
+  const enabled = hasAudienceInput(value);
 
-  const patientTotal = patientCountData?.data?.total || 0;
-  const doctorTotal = doctorCountData?.data?.total || 0;
-
-  /* Segment mode asks the same endpoint with the filters applied */
-  const segmentEndpoint = useMemo(() => {
-    if (value.mode !== AUDIENCE_MODES.SEGMENT) return null;
-
-    return countEndpoint(value.segmentGroup, {
-      search: value.segment.search || undefined,
-      isActive: value.segment.status || undefined,
-      fromDate: value.segment.fromDate || undefined,
-      toDate: value.segment.toDate || undefined,
-    });
-  }, [value.mode, value.segmentGroup, value.segment]);
-
-  const { data: segmentData, isFetching: segmentLoading } = useGetQuery(
-    segmentEndpoint,
-    ["notification-segment", value.segmentGroup, value.segment],
+  /**
+   * ⚠️ The count comes from the notifications API, not from the patient and
+   * doctor list endpoints.
+   *
+   * It runs the **same `resolveAudience` the send runs**, so the number on the
+   * confirm dialog cannot disagree with who actually receives it. Counting
+   * through `/patients/get-all` was a second implementation of the same
+   * question, and a second implementation is a number that drifts.
+   */
+  const { data, isFetching, error } = usePostQuery(
+    enabled ? API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT : null,
+    target,
+    ["notification-audience", target],
+    { enabled, keepPreviousData: true },
   );
 
-  const segmentTotal = segmentData?.data?.total || 0;
+  const resolved = data?.data;
+
+  /** Per-role counts for the role cards, one request each, cached by target. */
+  const patientCount = usePostQuery(
+    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+    { mode: AUDIENCE_MODES.ROLE, roles: ["user"] },
+    ["notification-audience", "count", "user"],
+    { staleTime: 60000 },
+  );
+  const doctorCount = usePostQuery(
+    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+    { mode: AUDIENCE_MODES.ROLE, roles: ["doctor"] },
+    ["notification-audience", "count", "doctor"],
+    { staleTime: 60000 },
+  );
+  const staffCount = usePostQuery(
+    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+    { mode: AUDIENCE_MODES.ROLE, roles: ["staff"] },
+    ["notification-audience", "count", "staff"],
+    { staleTime: 60000 },
+  );
+  const adminCount = usePostQuery(
+    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+    { mode: AUDIENCE_MODES.ROLE, roles: ["admin"] },
+    ["notification-audience", "count", "admin"],
+    { staleTime: 60000 },
+  );
+
+  const groupCounts = {
+    PATIENTS: patientCount.data?.data?.total,
+    DOCTORS: doctorCount.data?.data?.total,
+    STAFF: staffCount.data?.data?.total,
+    ADMINS: adminCount.data?.data?.total,
+  };
 
   const csvParsed = useMemo(() => parseRecipientList(value.csv), [value.csv]);
 
-  /* ---------------------------------------------------------------- */
-  /* Resolve the audience into a label + headcount                     */
-  /* ---------------------------------------------------------------- */
-
-  const resolved = useMemo(() => {
-    const totals = { PATIENTS: patientTotal, DOCTORS: doctorTotal };
-
-    if (value.mode === AUDIENCE_MODES.ROLE) {
-      const picked = value.groups.map(getAudienceGroup);
-      const hasUncounted = picked.some((group) => !group.listable);
-      const count = picked.reduce(
-        (total, group) => total + (totals[group.key] || 0),
-        0,
-      );
-
-      return {
-        mode: value.mode,
-        label: picked.length
-          ? picked.map((group) => `All ${group.label.toLowerCase()}`).join(", ")
-          : "No one selected",
-        count,
-        // Staff and admins have no list endpoint, so the total is a floor
-        exact: !hasUncounted,
-      };
-    }
-
-    if (value.mode === AUDIENCE_MODES.SEGMENT) {
-      const group = getAudienceGroup(value.segmentGroup);
-      const statusLabel =
-        value.segment.status === "true"
-          ? "Active"
-          : value.segment.status === "false"
-            ? "Inactive"
-            : "All";
-
-      const parts = [`${statusLabel} ${group.label.toLowerCase()}`];
-      if (value.segment.search) parts.push(`matching "${value.segment.search}"`);
-      if (value.segment.fromDate || value.segment.toDate) {
-        parts.push(
-          `joined ${value.segment.fromDate || "any time"} – ${
-            value.segment.toDate || "today"
-          }`,
-        );
-      }
-
-      return {
-        mode: value.mode,
-        label: parts.join(", "),
-        count: segmentTotal,
-        exact: true,
-      };
-    }
-
-    if (value.mode === AUDIENCE_MODES.MANUAL) {
-      return {
-        mode: value.mode,
-        label: value.selected.length
-          ? `${value.selected.length} hand-picked ${
-              value.selected.length === 1 ? "recipient" : "recipients"
-            }`
-          : "No one selected",
-        count: value.selected.length,
-        exact: true,
-      };
-    }
-
-    return {
+  const summary = useMemo(
+    () => ({
       mode: value.mode,
-      label: csvParsed.total
-        ? `${csvParsed.emails.length} pasted emails, ${csvParsed.phones.length} pasted numbers`
-        : "Nothing pasted yet",
-      count: csvParsed.total,
-      exact: true,
-    };
-  }, [value, patientTotal, doctorTotal, segmentTotal, csvParsed]);
+      label: resolved?.label || "No one selected",
+      count: enabled ? resolved?.total || 0 : 0,
+      truncated: Boolean(resolved?.truncated),
+      cap: resolved?.cap,
+      unmatched: resolved?.unmatched || 0,
+      externalEmails: resolved?.externalEmails || 0,
+      loading: isFetching,
+    }),
+    [value.mode, resolved, enabled, isFetching],
+  );
 
-  // Deps stay primitive so the parent is only told when something really moved
+  // Deps stay primitive so the parent is only told when something really moved.
   useEffect(() => {
-    onResolve(resolved);
+    onResolve(summary);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolved.mode, resolved.label, resolved.count, resolved.exact]);
-
-  /* ---------------------------------------------------------------- */
+  }, [
+    summary.mode,
+    summary.label,
+    summary.count,
+    summary.truncated,
+    summary.unmatched,
+    summary.externalEmails,
+    summary.loading,
+  ]);
 
   const toggleGroup = (key) => {
     patch({
@@ -161,8 +124,6 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
         : [...value.groups, key],
     });
   };
-
-  const countsLoading = loadingPatients || loadingDoctors;
 
   return (
     <div className="space-y-4">
@@ -199,12 +160,7 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
         <div className="grid gap-3 sm:grid-cols-2">
           {AUDIENCE_GROUPS.map((group) => {
             const isActive = value.groups.includes(group.key);
-            const total =
-              group.key === "PATIENTS"
-                ? patientTotal
-                : group.key === "DOCTORS"
-                  ? doctorTotal
-                  : 0;
+            const total = groupCounts[group.key];
 
             return (
               <button
@@ -229,13 +185,9 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
                     <p className="text-sm font-semibold text-gray-900">
                       {group.label}
                     </p>
-                    {group.listable ? (
-                      <Pill tone={group.tone}>
-                        {countsLoading ? "…" : total}
-                      </Pill>
-                    ) : (
-                      <Pill tone="slate">count pending</Pill>
-                    )}
+                    <Pill tone={group.tone}>
+                      {typeof total === "number" ? total : "…"}
+                    </Pill>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     {group.description}
@@ -317,7 +269,7 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
           <div className="flex items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 ring-1 ring-inset ring-gray-200">
             <p className="text-sm text-gray-600">Matching this filter</p>
             <p className="text-lg font-bold text-gray-900">
-              {segmentLoading ? "…" : segmentTotal}
+              {isFetching ? "…" : summary.count}
             </p>
           </div>
 
@@ -368,7 +320,9 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
             rows={7}
             value={value.csv}
             onChange={(event) => patch({ csv: event.target.value })}
-            placeholder={"9876543210, 9812345678\nasha@example.com\n+91 98765 43210"}
+            placeholder={
+              "9876543210, 9812345678\nasha@example.com\n+91 98765 43210"
+            }
           />
           <p className="text-xs text-gray-500">
             Separate entries with a comma, a space or a new line. Duplicates are
@@ -407,6 +361,40 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
               </p>
             </div>
           ) : null}
+
+          {/*
+            The server answers with what it could actually match, which is the
+            only place this can be known: a pasted address that belongs to no
+            account can still be emailed, but it gets no in-app row, and a
+            pasted number with no account reaches nobody at all.
+          */}
+          {summary.unmatched || summary.externalEmails ? (
+            <div className="rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-blue-800 ring-1 ring-inset ring-blue-200">
+              {summary.externalEmails
+                ? `${summary.externalEmails} address(es) have no account — they can be emailed, but get no in-app notification. `
+                : ""}
+              {summary.unmatched
+                ? `${summary.unmatched} number(s) match no account and cannot be reached.`
+                : ""}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-700 ring-1 ring-inset ring-red-200">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          Could not work out the audience size. The send will still count it
+          again before it goes out.
+        </div>
+      ) : null}
+
+      {summary.truncated ? (
+        <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-700 ring-1 ring-inset ring-red-200">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          {summary.count.toLocaleString("en-IN")} recipients is over the{" "}
+          {summary.cap?.toLocaleString("en-IN")} limit for one send. Narrow the
+          filter or split it into batches.
         </div>
       ) : null}
     </div>

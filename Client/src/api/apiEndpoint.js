@@ -95,22 +95,43 @@ const API_ENDPOINTS = {
   },
 
   /*
-   * Not built on the server yet — the notification centre runs on mock data
-   * (components/notifications/notificationsMock.js) until these exist. Paths
-   * are written the way the rest of the API names things so wiring them up is
-   * a one-line swap per call.
+   * See server/docs/NOTIFICATIONS.md.
+   *
+   * AUDIENCE_COUNT is a POST because a pasted-contacts audience carries a list
+   * of email addresses, which does not belong in a query string. CREATE
+   * answers 202: the campaign row exists but delivery is still running in the
+   * background, which is why the history list re-polls while anything is in
+   * the SENDING state.
    */
   NOTIFICATIONS: {
-    SEND: "/notifications/send",
-    GET_ALL: "/notifications/get-all",
-    GET_ONE: "/notifications/get/:id",
-    CANCEL_SCHEDULED: "/notifications/cancel/:id",
-    AUDIENCE_COUNT: "/notifications/audience-count",
+    AUDIENCE_COUNT: "/notifications/audience/count",
+    CREATE: "/notifications/campaigns",
+    GET_ALL: "/notifications/campaigns",
+    STATS: "/notifications/campaigns/stats",
+    GET_ONE: "/notifications/campaigns/:id",
+    CANCEL: "/notifications/campaigns/:id/cancel",
+    HEALTH: "/notifications/health",
+
     TEMPLATES: {
-      GET_ALL: "/notifications/templates/getAll",
-      CREATE: "/notifications/templates/create",
-      UPDATE: "/notifications/templates/update/:id",
-      DELETE: "/notifications/templates/delete/:id",
+      GET_ALL: "/notifications/templates",
+      CREATE: "/notifications/templates",
+      UPDATE: "/notifications/templates/:id",
+      DELETE: "/notifications/templates/:id",
+    },
+
+    // The logged-in user's own bell feed.
+    MY: {
+      LIST: "/notifications/my",
+      UNREAD_COUNT: "/notifications/my/unread-count",
+      READ: "/notifications/my/:id/read",
+      READ_ALL: "/notifications/my/read-all",
+      DELETE: "/notifications/my/:id",
+    },
+
+    // Called by the mobile app after login / on token refresh, and on logout.
+    DEVICE: {
+      REGISTER: "/notifications/device/register",
+      UNREGISTER: "/notifications/device/unregister",
     },
   },
 

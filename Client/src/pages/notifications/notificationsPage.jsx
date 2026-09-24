@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BellRing,
@@ -13,19 +14,16 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
+import { getApiErrorMessage, useApiMutation, useGetQuery } from "../../api/apiCall";
+import API_ENDPOINTS from "../../api/apiEndpoint";
 import {
   CHANNELS,
   CHANNEL_META,
   DELIVERY_STATUS,
   EMPTY_AUDIENCE,
   SCHEDULE_MODES,
+  buildAudienceTarget,
 } from "../../constants/notification";
-import {
-  MOCK_HISTORY,
-  MOCK_TEMPLATES,
-  sendCampaign,
-  summariseHistory,
-} from "../../components/notifications/notificationsMock";
 import AudienceBuilder from "../../components/notifications/AudienceBuilder";
 import ChannelPicker from "../../components/notifications/ChannelPicker";
 import ComposeForm from "../../components/notifications/ComposeForm";
@@ -42,9 +40,14 @@ import {
   StatCard,
   Tabs,
 } from "../../components/UI/kit";
+import { buildQuery, withPath } from "../../utils/ids";
 import { formatDateTime } from "../../utils/datetime";
 
-const TAB_KEYS = { COMPOSE: "compose", TEMPLATES: "templates", HISTORY: "history" };
+const TAB_KEYS = {
+  COMPOSE: "compose",
+  TEMPLATES: "templates",
+  HISTORY: "history",
+};
 
 const EMPTY_DRAFT = {
   channels: [CHANNELS.PUSH, CHANNELS.IN_APP],
@@ -58,20 +61,31 @@ const EMPTY_DRAFT = {
 };
 
 const EMPTY_SCHEDULE = { mode: SCHEDULE_MODES.NOW, date: "", time: "" };
+const EMPTY_FILTERS = { search: "", status: "", channel: "" };
 
 const percent = (part, whole) =>
   whole > 0 ? `${Math.round((part / whole) * 100)}%` : "—";
 
 /**
- * Lists everything standing between the draft and a send, so the summary card
- * can explain exactly what is missing instead of just greying the button out.
+ * Everything standing between the draft and a send.
+ *
+ * Returned as a list rather than a boolean so the send panel can say what is
+ * missing — a greyed-out button with no explanation is the most common way an
+ * admin gets stuck on a form like this.
  */
 const validate = ({ draft, audience, schedule, scheduledAt }) => {
   const problems = [];
   const has = (channel) => draft.channels.includes(channel);
 
   if (!draft.channels.length) problems.push("Pick at least one channel.");
-  if (!audience.count) problems.push("The audience is empty.");
+
+  if (audience.loading) {
+    problems.push("Working out how many people this reaches…");
+  } else if (!audience.count) {
+    problems.push("The audience is empty.");
+  } else if (audience.truncated) {
+    problems.push("The audience is over the limit for a single send.");
+  }
 
   if ((has(CHANNELS.PUSH) || has(CHANNELS.IN_APP)) && !draft.title.trim()) {
     problems.push("Push and in-app need a title.");
@@ -84,9 +98,6 @@ const validate = ({ draft, audience, schedule, scheduledAt }) => {
   }
   if (has(CHANNELS.EMAIL) && !draft.emailBody.trim()) {
     problems.push("Email needs a body.");
-  }
-  if ((has(CHANNELS.SMS) || has(CHANNELS.WHATSAPP)) && !draft.smsBody.trim()) {
-    problems.push("SMS and WhatsApp need a message.");
   }
 
   if (schedule.mode === SCHEDULE_MODES.LATER) {
@@ -101,6 +112,8 @@ const validate = ({ draft, audience, schedule, scheduledAt }) => {
 };
 
 export const NotificationsPage = () => {
+  const queryClient = useQueryClient();
+
   const [tab, setTab] = useState(TAB_KEYS.COMPOSE);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [audienceState, setAudienceState] = useState(EMPTY_AUDIENCE);
@@ -108,17 +121,119 @@ export const NotificationsPage = () => {
     mode: EMPTY_AUDIENCE.mode,
     label: "No one selected",
     count: 0,
-    exact: true,
+    truncated: false,
+    loading: false,
   });
   const [schedule, setSchedule] = useState(EMPTY_SCHEDULE);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [isSending, setIsSending] = useState(false);
 
-  // Local until the notifications API exists — see notificationsMock.js
-  const [history, setHistory] = useState(MOCK_HISTORY);
-  const [templates, setTemplates] = useState(MOCK_TEMPLATES);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-  const stats = useMemo(() => summariseHistory(history), [history]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(filters.search.trim());
+      setPage(1);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
+  /* ---------------- queries ---------------- */
+
+  const historyEndpoint = useMemo(
+    () =>
+      `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL}${buildQuery({
+        page,
+        limit: 20,
+        search: search || undefined,
+        status: filters.status || undefined,
+        channel: filters.channel || undefined,
+      })}`,
+    [page, search, filters.status, filters.channel],
+  );
+
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useGetQuery(
+    historyEndpoint,
+    ["notification-campaigns", page, search, filters.status, filters.channel],
+    {
+      /**
+       * A send-now campaign answers 202 and finishes in the background, so the
+       * row lands as SENDING with empty stats. Re-poll only while something is
+       * actually in flight — a fixed interval would keep hammering the endpoint
+       * on a screen nobody is watching.
+       */
+      refetchInterval: (query) => {
+        const rows = query?.state?.data?.data?.data || [];
+        return rows.some((row) => row.status === DELIVERY_STATUS.SENDING)
+          ? 3000
+          : false;
+      },
+    },
+  );
+
+  const campaigns = historyData?.data?.data || [];
+  const totalPages = historyData?.data?.totalPages || 1;
+  // The list endpoint answers 404 when nothing matches.
+  const historyEmpty =
+    historyError?.response?.status === 404 ||
+    (!historyLoading && !campaigns.length);
+  const historyHardError =
+    historyError && historyError?.response?.status !== 404
+      ? historyError
+      : null;
+
+  const { data: statsData, refetch: refetchStats } = useGetQuery(
+    API_ENDPOINTS.NOTIFICATIONS.STATS,
+    ["notification-stats"],
+  );
+  const stats = statsData?.data || {};
+
+  const {
+    data: templateData,
+    isLoading: templatesLoading,
+    refetch: refetchTemplates,
+  } = useGetQuery(API_ENDPOINTS.NOTIFICATIONS.TEMPLATES.GET_ALL, [
+    "notification-templates",
+  ]);
+  const templates = templateData?.data?.data || [];
+
+  /* ---------------- mutations ---------------- */
+
+  const { mutate: sendCampaign, isPending: isSending } = useApiMutation();
+  const {
+    mutate: cancelCampaign,
+    variables: cancelVars,
+    isPending: isCancelling,
+  } = useApiMutation({ method: "patch" });
+  const { mutate: saveTemplate, isPending: isSavingTemplate } = useApiMutation();
+  const {
+    mutate: removeTemplate,
+    variables: deleteVars,
+    isPending: isDeleting,
+  } = useApiMutation({ method: "delete" });
+
+  /**
+   * Which row is mid-request, read back out of the url the mutation was given.
+   *
+   * ⚠️ Gated on `isPending`: react-query keeps `variables` after a mutation
+   * settles, so without it the last row stayed disabled once the request had
+   * finished.
+   */
+  const cancellingId = isCancelling
+    ? cancelVars?.url?.split("/")?.slice(-2, -1)[0]
+    : null;
+  const deletingTemplateId = isDeleting
+    ? deleteVars?.url?.split("/").pop()
+    : null;
+
+  /* ---------------- derived ---------------- */
 
   const scheduledAt = useMemo(() => {
     if (schedule.mode !== SCHEDULE_MODES.LATER) return null;
@@ -131,7 +246,7 @@ export const NotificationsPage = () => {
     [draft, audience, schedule, scheduledAt],
   );
 
-  /** Channels that quietly skip anyone missing a contact detail */
+  /** Channels that quietly skip anyone missing a contact detail. */
   const reachNotes = draft.channels
     .map((key) => CHANNEL_META[key])
     .filter((meta) => meta?.requiresLabel);
@@ -142,70 +257,122 @@ export const NotificationsPage = () => {
     setAudienceState(EMPTY_AUDIENCE);
   };
 
-  const handleSend = async () => {
-    setIsSending(true);
-
-    try {
-      const campaign = await sendCampaign({ draft, audience, scheduledAt });
-      setHistory((previous) => [campaign, ...previous]);
-      setConfirmOpen(false);
-      resetAll();
-      setTab(TAB_KEYS.HISTORY);
-
-      toast.success(
-        campaign.status === DELIVERY_STATUS.SCHEDULED
-          ? `Scheduled for ${formatDateTime(campaign.scheduledAt)}`
-          : `Sent to ${campaign.targeted} recipients`,
-      );
-    } finally {
-      setIsSending(false);
-    }
+  const refreshHistory = () => {
+    refetchHistory();
+    refetchStats();
   };
 
-  const useTemplate = (template) => {
-    setDraft((previous) => ({
-      ...previous,
-      channels: template.channels,
-      title: template.title,
-      body: template.body,
-      subject: template.title,
-      emailBody: template.body,
-      smsBody: template.body,
-    }));
-    setTab(TAB_KEYS.COMPOSE);
-    toast.success(`Loaded "${template.name}"`);
-  };
+  /* ---------------- handlers ---------------- */
 
-  const duplicateCampaign = (item) => {
-    setDraft((previous) => ({
-      ...previous,
-      channels: item.channels,
-      title: item.title,
-      body: item.body,
-      subject: item.title,
-      emailBody: item.body,
-      smsBody: item.body,
-    }));
-    setTab(TAB_KEYS.COMPOSE);
-    toast.success("Copied into the composer");
-  };
+  const handleSend = () => {
+    const payload = {
+      channels: draft.channels,
+      audience: buildAudienceTarget(audienceState),
+      title: draft.title.trim(),
+      body: draft.body.trim(),
+      ...(draft.imageUrl ? { imageUrl: draft.imageUrl.trim() } : {}),
+      ...(draft.deepLink ? { deepLink: draft.deepLink.trim() } : {}),
+      ...(draft.channels.includes(CHANNELS.EMAIL)
+        ? { subject: draft.subject.trim(), emailBody: draft.emailBody.trim() }
+        : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
+    };
 
-  const cancelScheduled = (item) => {
-    if (!window.confirm(`Cancel "${item.title}"? It will not be sent.`)) return;
+    sendCampaign(
+      { url: API_ENDPOINTS.NOTIFICATIONS.CREATE, data: payload },
+      {
+        onSuccess: (res) => {
+          setConfirmOpen(false);
+          resetAll();
+          setTab(TAB_KEYS.HISTORY);
+          setPage(1);
+          refreshHistory();
 
-    setHistory((previous) =>
-      previous.map((row) =>
-        row._id === item._id
-          ? { ...row, status: DELIVERY_STATUS.CANCELLED }
-          : row,
-      ),
+          const total = res?.data?.audience?.total ?? 0;
+          toast.success(
+            scheduledAt
+              ? `Scheduled for ${formatDateTime(scheduledAt)}`
+              : `Sending to ${total.toLocaleString("en-IN")} recipients`,
+          );
+        },
+        onError: (error) => {
+          // Kept open: the audience or the copy needs fixing, and closing the
+          // dialog would hide what the admin was about to send.
+          toast.error(getApiErrorMessage(error, "Could not send the notification"));
+        },
+      },
     );
-    toast.success("Schedule cancelled");
   };
 
-  const scheduledCount = history.filter(
-    (item) => item.status === DELIVERY_STATUS.SCHEDULED,
-  ).length;
+  const handleCancel = (campaign) => {
+    if (!window.confirm(`Cancel "${campaign.title}"? It will not be sent.`)) {
+      return;
+    }
+
+    cancelCampaign(
+      { url: withPath(API_ENDPOINTS.NOTIFICATIONS.CANCEL, { id: campaign._id }) },
+      {
+        onSuccess: () => {
+          toast.success("Schedule cancelled");
+          refreshHistory();
+        },
+      },
+    );
+  };
+
+  const loadIntoComposer = (source, message) => {
+    setDraft((previous) => ({
+      ...previous,
+      channels: source.channels?.length ? source.channels : previous.channels,
+      title: source.title || "",
+      body: source.body || "",
+      subject: source.subject || source.title || "",
+      emailBody: source.emailBody || source.body || "",
+      smsBody: source.body || "",
+      imageUrl: source.imageUrl || "",
+      deepLink: source.deepLink || "",
+    }));
+    setTab(TAB_KEYS.COMPOSE);
+    toast.success(message);
+  };
+
+  const handleSaveTemplate = (payload, onDone) => {
+    saveTemplate(
+      { url: API_ENDPOINTS.NOTIFICATIONS.TEMPLATES.CREATE, data: payload },
+      {
+        onSuccess: () => {
+          toast.success("Template saved");
+          refetchTemplates();
+          onDone?.();
+        },
+      },
+    );
+  };
+
+  const handleDeleteTemplate = (template) => {
+    if (!window.confirm(`Delete "${template.name}"?`)) return;
+
+    removeTemplate(
+      {
+        url: withPath(API_ENDPOINTS.NOTIFICATIONS.TEMPLATES.DELETE, {
+          id: template._id,
+        }),
+      },
+      {
+        onSuccess: () => {
+          toast.success("Template deleted");
+          refetchTemplates();
+        },
+      },
+    );
+  };
+
+  // Compose fields changed, so any cached audience count for the old target is
+  // stale — react-query keys on the target itself, so this only has to nudge.
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["notification-audience"] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audienceState.mode]);
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -227,30 +394,30 @@ export const NotificationsPage = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Recipients reached"
-          value={stats.sent.toLocaleString("en-IN")}
-          hint="Across every campaign"
+          label="Recipients targeted"
+          value={(stats.targeted || 0).toLocaleString("en-IN")}
+          hint={`Across ${stats.campaigns || 0} campaigns`}
           icon={Users}
           tone="blue"
         />
         <StatCard
           label="Delivered"
-          value={percent(stats.delivered, stats.sent)}
-          hint={`${stats.delivered.toLocaleString("en-IN")} delivered`}
+          value={percent(stats.delivered, stats.targeted)}
+          hint={`${(stats.delivered || 0).toLocaleString("en-IN")} push and email`}
           icon={CheckCircle2}
           tone="green"
         />
         <StatCard
-          label="Opened"
-          value={percent(stats.opened, stats.delivered)}
-          hint={`${stats.opened.toLocaleString("en-IN")} opened`}
+          label="Recorded in-app"
+          value={(stats.recorded || 0).toLocaleString("en-IN")}
+          hint="Rows written to recipients' feeds"
           icon={BellRing}
           tone="purple"
         />
         <StatCard
           label="Scheduled"
-          value={stats.scheduled}
-          hint={`${stats.failed.toLocaleString("en-IN")} failed deliveries`}
+          value={stats.scheduled || 0}
+          hint={`${(stats.failed || 0).toLocaleString("en-IN")} failed deliveries`}
           icon={CalendarClock}
           tone="amber"
         />
@@ -267,12 +434,7 @@ export const NotificationsPage = () => {
             icon: FileText,
             count: templates.length,
           },
-          {
-            key: TAB_KEYS.HISTORY,
-            label: "History",
-            icon: History,
-            count: history.length,
-          },
+          { key: TAB_KEYS.HISTORY, label: "History", icon: History },
         ]}
       />
 
@@ -294,8 +456,9 @@ export const NotificationsPage = () => {
               description="Who receives it."
               action={
                 <Pill tone={audience.count ? "blue" : "slate"}>
-                  {audience.exact ? "" : "at least "}
-                  {audience.count.toLocaleString("en-IN")} recipients
+                  {audience.loading
+                    ? "counting…"
+                    : `${audience.count.toLocaleString("en-IN")} recipients`}
                 </Pill>
               }
             >
@@ -324,12 +487,11 @@ export const NotificationsPage = () => {
                     Going to
                   </p>
                   <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {audience.exact ? "" : "≥ "}
-                    {audience.count.toLocaleString("en-IN")}
+                    {audience.loading
+                      ? "…"
+                      : audience.count.toLocaleString("en-IN")}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-600">
-                    {audience.label}
-                  </p>
+                  <p className="mt-0.5 text-xs text-gray-600">{audience.label}</p>
 
                   <div className="mt-3 flex flex-wrap gap-1">
                     {draft.channels.map((key) => (
@@ -398,8 +560,7 @@ export const NotificationsPage = () => {
                   <ul className="space-y-1 rounded-lg bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800 ring-1 ring-inset ring-amber-200">
                     {reachNotes.map((meta) => (
                       <li key={meta.label}>
-                        {meta.label} skips recipients without{" "}
-                        {meta.requiresLabel}.
+                        {meta.label} skips recipients without {meta.requiresLabel}.
                       </li>
                     ))}
                   </ul>
@@ -431,7 +592,8 @@ export const NotificationsPage = () => {
                 </Button>
 
                 <p className="text-center text-[11px] text-gray-400">
-                  Sending is simulated — the notifications API is not wired yet.
+                  Delivery runs in the background — the History tab updates as it
+                  completes.
                 </p>
               </div>
             </SectionCard>
@@ -444,18 +606,14 @@ export const NotificationsPage = () => {
           <TemplatesPanel
             templates={templates}
             draft={draft}
-            onUse={useTemplate}
-            onSave={(template) => {
-              setTemplates((previous) => [template, ...previous]);
-              toast.success("Template saved");
-            }}
-            onDelete={(template) => {
-              if (!window.confirm(`Delete "${template.name}"?`)) return;
-              setTemplates((previous) =>
-                previous.filter((item) => item._id !== template._id),
-              );
-              toast.success("Template deleted");
-            }}
+            isLoading={templatesLoading}
+            isSaving={isSavingTemplate}
+            deletingId={deletingTemplateId}
+            onUse={(template) =>
+              loadIntoComposer(template, `Loaded "${template.name}"`)
+            }
+            onSave={handleSaveTemplate}
+            onDelete={handleDeleteTemplate}
           />
         </SectionCard>
       ) : null}
@@ -464,16 +622,28 @@ export const NotificationsPage = () => {
         <SectionCard
           title="Sent notifications"
           description={
-            scheduledCount
-              ? `${scheduledCount} still waiting to go out`
+            stats.scheduled
+              ? `${stats.scheduled} still waiting to go out`
               : "Everything that has gone out so far"
           }
           bodyClassName="p-6"
         >
           <HistoryPanel
-            history={history}
-            onDuplicate={duplicateCampaign}
-            onCancel={cancelScheduled}
+            campaigns={campaigns}
+            filters={filters}
+            onFiltersChange={setFilters}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            isLoading={historyLoading}
+            isEmpty={historyEmpty}
+            error={historyHardError}
+            onRetry={refetchHistory}
+            cancellingId={cancellingId}
+            onDuplicate={(item) =>
+              loadIntoComposer(item, "Copied into the composer")
+            }
+            onCancel={handleCancel}
           />
         </SectionCard>
       ) : null}
@@ -507,13 +677,12 @@ export const NotificationsPage = () => {
               {draft.title || draft.subject || "Untitled notification"}
             </p>
             <p className="mt-1 text-xs text-gray-600">
-              {draft.body || draft.smsBody || draft.emailBody}
+              {draft.body || draft.emailBody}
             </p>
           </div>
 
           <p className="text-gray-700">
             <span className="font-semibold">
-              {audience.exact ? "" : "At least "}
               {audience.count.toLocaleString("en-IN")} recipients
             </span>{" "}
             — {audience.label}
@@ -527,9 +696,7 @@ export const NotificationsPage = () => {
           {scheduledAt ? (
             <p className="text-gray-700">
               Goes out on{" "}
-              <span className="font-semibold">
-                {formatDateTime(scheduledAt)}
-              </span>
+              <span className="font-semibold">{formatDateTime(scheduledAt)}</span>
             </p>
           ) : null}
         </div>

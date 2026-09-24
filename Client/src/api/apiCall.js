@@ -28,6 +28,25 @@ export const getApiErrorMessage = (
   return fallback;
 };
 
+/**
+ * A *read* that has to be a POST.
+ *
+ * Some lookups cannot go in a query string — the notification audience count
+ * takes a pasted list of emails, which has no business in a URL or an access
+ * log. This keeps them cached and re-fetched like any other query instead of
+ * forcing a mutation plus manual state.
+ */
+export const usePostQuery = (endpoint, body, queryKey, options = {}) =>
+  useQuery({
+    queryKey,
+    enabled: !!endpoint && (options.enabled ?? true),
+    queryFn: async () => {
+      const response = await axiosInstance.post(endpoint, body);
+      return response.data;
+    },
+    ...options,
+  });
+
 // Generic GET request with React Query
 export const useGetQuery = (endpoint, queryKeyOrOptions, options = {}) => {
   const queryKey = Array.isArray(queryKeyOrOptions)
