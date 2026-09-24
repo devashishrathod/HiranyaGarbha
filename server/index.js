@@ -8,6 +8,7 @@ const { mongoDb } = require("./database/mongoDb");
 const { errorHandler } = require("./middlewares");
 const { throwError } = require("./utils");
 const allRoutes = require("./routes");
+const { startJobs } = require("./jobs");
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -25,7 +26,11 @@ app.use((req, res, next) => {
 });
 app.use(errorHandler);
 
-mongoDb();
+// Jobs start only once the database is up — a sweep that runs before mongoose
+// connects buffers its query and times out, which reads as a broken scheduler
+// rather than a boot-order problem.
+mongoDb().then(startJobs);
+
 app.listen(port, () =>
   console.log(`✅ HiranyaGarbha Server running on http://localhost:${port}`)
 );
