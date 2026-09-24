@@ -2,6 +2,7 @@ const Patient = require("../../models/Patient");
 const User = require("../../models/User");
 const { throwError } = require("../../utils");
 const { uploadImage, deleteImage } = require("../uploads");
+const { grantFreeBasic } = require("../patientSubscriptions/grantFreeBasic");
 
 exports.completeProfile = async (userId, data, image) => {
   let patient = await Patient.findOne({ userId, isDeleted: false });
@@ -77,6 +78,8 @@ exports.completeProfile = async (userId, data, image) => {
   if (data.preferredLanguage !== undefined) patient.preferredLanguage = data.preferredLanguage;
   if (data.emergencyContact !== undefined) patient.emergencyContact = { ...patient.emergencyContact, ...data.emergencyContact };
 
+  const wasIncomplete = !patient.isProfileCompleted;
+
   patient.isProfileCompleted = true;
   await patient.save();
 
@@ -85,6 +88,16 @@ exports.completeProfile = async (userId, data, image) => {
     isSignUpCompleted: true,
     currentScreen: "HOME_SCREEN",
   });
+
+  /*
+   * Free Basic lands the moment the profile is complete, so every patient owns
+   * a real subscription row and no entitlement check needs a "no row means
+   * Basic" special case. See docs/SUBSCRIPTIONS.md section 10.
+   *
+   * ⚠️ `grantFreeBasic` never throws — onboarding must not fail because the
+   * Basic package was renamed or taken off sale.
+   */
+  if (wasIncomplete) await grantFreeBasic(patient._id);
 
   return patient;
 };
