@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -r taskkill //F //PID)",
+      "Bash(cp postman/HiranyaGarbha.postman_collection.json /tmp/pm_backup.json)",
+      "Bash(node scripts/addPostmanSubscriptions.tmp.js)"
+    ]
+  }
+}
