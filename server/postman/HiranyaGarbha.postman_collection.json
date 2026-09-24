@@ -1465,6 +1465,724 @@
       ]
     },
     {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "audienceCount (by role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // roles are User.role values: user = patients, doctor, staff, admin\n    \"mode\": \"ROLE\",\n    \"roles\": [\"user\", \"doctor\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/audience/count",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "audience",
+                "count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "audienceCount (by filter)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // SEGMENT filters run against the Patient / Doctor profile collection,\n    // which is what the admin panel filtered on. group: PATIENTS | DOCTORS\n    \"mode\": \"SEGMENT\",\n    \"segment\": {\n        \"group\": \"PATIENTS\",\n        \"isActive\": true,\n        \"search\": \"\",              // name, email or phone. optional\n        \"fromDate\": \"2026-01-01\",  // joined between. optional\n        \"toDate\": \"2026-09-25\"\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/audience/count",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "audience",
+                "count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "audienceCount (hand-picked)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // These are User._id values, NOT Patient._id / Doctor._id.\n    // A profile id resolves to nobody and the campaign reports an empty audience.\n    \"mode\": \"MANUAL\",\n    \"userIds\": [\"68f0a1b2c3d4e5f6a7b8c9d0\", \"68f0a1b2c3d4e5f6a7b8c9d1\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/audience/count",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "audience",
+                "count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "audienceCount (pasted list)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // Matched back to accounts. The response reports what could not be matched:\n    //   externalEmails = no account, can still be emailed, gets no in-app row\n    //   unmatched      = numbers that reach nobody at all\n    \"mode\": \"CSV\",\n    \"contacts\": {\n        \"emails\": [\"asha@example.com\", \"meera@example.com\"],\n        \"phones\": [\"9876543210\", \"+91 98123 45678\"]\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/audience/count",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "audience",
+                "count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "sendNotification (push + in-app)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // Answers 202, not 201: the campaign row is written immediately and\n    // delivery runs in the background. Poll GET /campaigns for the result.\n    \"channels\": [\"PUSH\", \"IN_APP\"],\n    \"audience\": { \"mode\": \"ROLE\", \"roles\": [\"user\"] },\n    \"title\": \"A new care package is live\",\n    \"body\": \"Hi {{name}}, we have added a new package for your {{trimester}}. Open the app to take a look.\",\n    // deepLink is a client route. Keep it slash-style, not app://... - Postman\n    // strips JS comments from a JSON body and a // inside a value trips that up.\n    \"deepLink\": \"/packages\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "sendNotification (with email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // subject and emailBody are REQUIRED once EMAIL is in channels.\n    \"channels\": [\"IN_APP\", \"EMAIL\"],\n    \"audience\": {\n        \"mode\": \"SEGMENT\",\n        \"segment\": { \"group\": \"DOCTORS\", \"isActive\": true }\n    },\n    \"title\": \"Please confirm next week's availability\",\n    \"body\": \"Hello {{name}}, next week's roster closes on Friday.\",\n    \"subject\": \"Action needed: confirm your availability\",\n    \"emailBody\": \"Hello {{name}},\\n\\nNext week's roster closes on Friday. Please review your slots in the panel.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "scheduleNotification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // scheduledAt must be in the future. The audience is resolved when it RUNS,\n    // not now, so \"all active patients\" means whoever exists at that time.\n    \"channels\": [\"PUSH\", \"IN_APP\"],\n    \"audience\": { \"mode\": \"ROLE\", \"roles\": [\"user\"] },\n    \"title\": \"Monthly wellness webinar\",\n    \"body\": \"Join us this Saturday for a live session on third-trimester nutrition.\",\n    \"scheduledAt\": \"2026-10-01T04:30:00.000Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllCampaigns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns?page=1&limit=20",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "SENT",
+                  "disabled": true
+                },
+                {
+                  "key": "channel",
+                  "value": "PUSH",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "package",
+                  "disabled": true
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2026-09-01",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-09-30",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCampaignStats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns/stats",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCampaign",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns/68f0a1b2c3d4e5f6a7b8c9d0",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns",
+                "68f0a1b2c3d4e5f6a7b8c9d0"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "cancelScheduledCampaign",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/campaigns/68f0a1b2c3d4e5f6a7b8c9d0/cancel",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "campaigns",
+                "68f0a1b2c3d4e5f6a7b8c9d0",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllTemplates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/templates",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "templates"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "createTemplate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Appointment reminder\",\n    \"description\": \"Day-before nudge for a booked consultation\",\n    \"channels\": [\"PUSH\", \"IN_APP\"],\n    \"title\": \"Your appointment is tomorrow\",\n    \"body\": \"Hi {{name}}, your consultation with {{doctor}} is tomorrow. Please reach 10 minutes early.\",\n    \"audienceHint\": \"Patients with an upcoming appointment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/templates",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "templates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateTemplate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // Any subset of the create fields. At least one is required.\n    \"description\": \"Sent the evening before the appointment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/templates/68f0a1b2c3d4e5f6a7b8c9d0",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "templates",
+                "68f0a1b2c3d4e5f6a7b8c9d0"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteTemplate",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/templates/68f0a1b2c3d4e5f6a7b8c9d0",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "templates",
+                "68f0a1b2c3d4e5f6a7b8c9d0"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "notificationHealth",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/health",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyNotifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/my?page=1&limit=20",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "isRead",
+                  "value": "false",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "ANNOUNCEMENT",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyUnreadCount",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/my/unread-count",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "my",
+                "unread-count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "markAllAsRead",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/my/read-all",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "my",
+                "read-all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "markAsRead",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/my/68f0a1b2c3d4e5f6a7b8c9d0/read",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "my",
+                "68f0a1b2c3d4e5f6a7b8c9d0",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteMyNotification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/my/68f0a1b2c3d4e5f6a7b8c9d0",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "my",
+                "68f0a1b2c3d4e5f6a7b8c9d0"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "registerDevice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // Called by the app after login AND on every FCM token refresh.\n    // Registering a token that is already on another account reassigns it.\n    \"fcmToken\": \"fGh7dK2lQx...:APA91bH...\",\n    \"platform\": \"android\"   // android | ios | web. optional\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/device/register",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "device",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "unregisterDevice (call on logout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    // There is no /auth/logout yet, so the app MUST call this in its own\n    // logout flow. A token left registered means the next person on a shared\n    // phone receives the previous user's notifications.\n    \"fcmToken\": \"fGh7dK2lQx...:APA91bH...\"   // optional, scopes the clear\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}notifications/device/unregister",
+              "host": [
+                "{{Hiranya-baseUrl}}notifications"
+              ],
+              "path": [
+                "device",
+                "unregister"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Admin broadcast, the recipient's own feed, and push device registration.\nSee server/docs/NOTIFICATIONS.md for the architecture.\n\nNotes:\n- Merge tags in the bodies ({{name}}, {{firstName}}, {{trimester}}, {{doctor}}) are substituted by the SERVER per recipient. Postman leaves them alone as long as no collection or environment variable of that name exists - do not create one.\n- Push needs FCM_PROJECT_ID / FCM_CLIENT_EMAIL / FCM_PRIVATE_KEY in the server .env. Without them the in-app row is still written and push is skipped; GET /notifications/health says which way it is.\n- SMS and WHATSAPP are in the channel enum but are refused with a 422 until their providers are wired (phase 4)."
+    },
+    {
       "name": "Subscriptions",
       "item": [
         {
