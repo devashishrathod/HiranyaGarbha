@@ -3,7 +3,15 @@
     "allow": [
       "Bash(xargs -r taskkill //F //PID)",
       "Bash(cp postman/HiranyaGarbha.postman_collection.json /tmp/pm_backup.json)",
-      "Bash(node scripts/addPostmanSubscriptions.tmp.js)"
+      "Bash(node scripts/addPostmanSubscriptions.tmp.js)",
+      "Bash(npm run *)",
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)",
+      "Bash(echo \"main vs origin/main \\(behind ahead\\): $\\(git rev-list --left-right --count origin/main...main\\)\")",
+      "Bash(echo \"branch vs origin      \\(behind ahead\\): $\\(git rev-list --left-right --count origin/feat/notifications-phase-1...feat/notifications-phase-1\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://api.github.com/repos/devashishrathod/HiranyaGarbha)",
+      "Bash(grep -v -E \"\\\\.\\(png|jpg|jpeg|svg|gif|webp|mp3|mp4|ico|woff2?|ttf\\)$\")"
     ]
   }
 }

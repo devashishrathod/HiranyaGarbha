@@ -75,18 +75,19 @@ const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
       case "admin":
         return [
           ...commonItems,
-          {
-            name: "Experts",
-            path: "/experts",
-            icon: icons.experts,
-            color: "text-yellow-500",
-          },
-          {
-            name: "Tips",
-            path: "/tips",
-            icon: icons.tips,
-            color: "text-blue-600",
-          },
+          // Hidden for now — Experts and Tips are not ready yet
+          // {
+          //   name: "Experts",
+          //   path: "/experts",
+          //   icon: icons.experts,
+          //   color: "text-yellow-500",
+          // },
+          // {
+          //   name: "Tips",
+          //   path: "/tips",
+          //   icon: icons.tips,
+          //   color: "text-blue-600",
+          // },
           {
             name: "Categories",
             path: "/category",
@@ -105,31 +106,32 @@ const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
             icon: icons.prenatal_services,
             color: "text-pink-500",
           },
-          {
-            name: "Pregnancy Trimester Plans",
-            path: "/trimester",
-            icon: icons.trimester_plans,
-            color: "text-green-500",
-          },
-          {
-            name: "Nutrition Plans",
-            path: "/nutritions",
-            icon: icons.nutrition,
-            color: "text-purple-500",
-          },
-          {
-            name: "Meal Plans",
-            path: "/meal-plans",
-            icon: icons.meal_plans,
-            color: "text-violet-500",
-          },
-          {
-            name: "Wellness & Mindfulness",
-            path: "/wellness-mindfulness",
-            icon: icons.wellness,
-            color: "text-indigo-500",
-          },
-
+          // Hidden for now — Trimester Plans and Nutrition Plans are not ready yet
+          // {
+          //   name: "Pregnancy Trimester Plans",
+          //   path: "/trimester",
+          //   icon: icons.trimester_plans,
+          //   color: "text-green-500",
+          // },
+          // {
+          //   name: "Nutrition Plans",
+          //   path: "/nutritions",
+          //   icon: icons.nutrition,
+          //   color: "text-purple-500",
+          // },
+          // Hidden for now — Meal Plans and Wellness are not ready yet
+          // {
+          //   name: "Meal Plans",
+          //   path: "/meal-plans",
+          //   icon: icons.meal_plans,
+          //   color: "text-violet-500",
+          // },
+          // {
+          //   name: "Wellness & Mindfulness",
+          //   path: "/wellness-mindfulness",
+          //   icon: icons.wellness,
+          //   color: "text-indigo-500",
+          // },
           {
             name: "Products",
             path: "/products",
@@ -166,24 +168,26 @@ const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
             icon: icons.faq,
             color: "text-amber-500",
           },
-          {
-            name: "Musics",
-            path: "/musics",
-            icon: icons.musics,
-            color: "text-rose-500",
-          },
+          // Hidden for now — Musics is not ready yet
+          // {
+          //   name: "Musics",
+          //   path: "/musics",
+          //   icon: icons.musics,
+          //   color: "text-rose-500",
+          // },
           {
             name: "Appointments",
             path: "/appointments",
             icon: icons.appointments,
             color: "text-indigo-600",
           },
-          {
-            name: "Daily Motivation",
-            path: "/daily-motivation",
-            icon: icons.daily_motivation,
-            color: "text-yellow-600",
-          },
+          // Hidden for now — Daily Motivation is not ready yet
+          // {
+          //   name: "Daily Motivation",
+          //   path: "/daily-motivation",
+          //   icon: icons.daily_motivation,
+          //   color: "text-yellow-600",
+          // },
           {
             name: "Packages",
             path: "/packages",
@@ -202,18 +206,19 @@ const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
             icon: icons.doctors,
             color: "text-teal-600",
           },
-          {
-            name: "Hospitals",
-            path: "/hospitals",
-            icon: icons.hospitals,
-            color: "text-orange-600",
-          },
-          {
-            name: "Labs",
-            path: "/labs",
-            icon: icons.labs,
-            color: "text-purple-600",
-          },
+          // Hidden for now — Hospitals and Labs are not ready yet
+          // {
+          //   name: "Hospitals",
+          //   path: "/hospitals",
+          //   icon: icons.hospitals,
+          //   color: "text-orange-600",
+          // },
+          // {
+          //   name: "Labs",
+          //   path: "/labs",
+          //   icon: icons.labs,
+          //   color: "text-purple-600",
+          // },
           {
             name: "Privacy & Policies",
             path: "/privacies",
