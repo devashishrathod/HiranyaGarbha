@@ -307,4 +307,10 @@ module.exports = {
   // A custom window longer than this is refused: month buckets past two years
   // stop fitting on the chart and the aggregations scan most of the history.
   DASHBOARD_MAX_CUSTOM_DAYS: 731,
+
+  /** Profile photos: what an upload may be before it is sent to Cloudinary. */
+  PROFILE_IMAGE: Object.freeze({
+    MAX_BYTES: 5 * 1024 * 1024,
+    MIME_TYPES: Object.freeze(["image/jpeg", "image/png", "image/webp"]),
+  }),
 };
