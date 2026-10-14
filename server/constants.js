@@ -294,4 +294,17 @@ module.exports = {
     maxTitleLength: 150,
     maxBodyLength: 2000,
   }),
+
+  /** Date windows the admin dashboard can be viewed over. */
+  DASHBOARD_RANGES: Object.freeze({
+    TODAY: "today",
+    WEEK: "7d",
+    MONTH: "30d",
+    YEAR: "12m",
+    CUSTOM: "custom",
+  }),
+
+  // A custom window longer than this is refused: month buckets past two years
+  // stop fitting on the chart and the aggregations scan most of the history.
+  DASHBOARD_MAX_CUSTOM_DAYS: 731,
 };

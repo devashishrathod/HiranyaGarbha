@@ -7,8 +7,9 @@ const API_ENDPOINTS = {
     GET_PROFILE: "/users/get",
     UPDATE_PROFILE: "/users/update",
   },
+  // ?range=today|7d|30d|12m, or ?range=custom&from=YYYY-MM-DD&to=YYYY-MM-DD
   DASHBOARD: {
-    GET_DASHBOARD: "/dashboard",
+    SUMMARY: "/dashboard/summary",
   },
   CATEGORIES: {
     CREATE: "/categories/create",
