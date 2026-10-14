@@ -125,9 +125,13 @@ export const AUDIENCE_MODE_META = {
 };
 
 /**
- * The four audiences an admin thinks in. `listable` marks the ones that already
+ * The audiences an admin thinks in. `listable` marks the ones that already
  * have a `/get-all` endpoint — staff and admins can only be targeted in bulk
  * until a users list endpoint exists.
+ *
+ * Staff and Admins are hidden from the composer for now; uncomment them (and
+ * their counts in AudienceBuilder.jsx) to offer them again. The server still
+ * accepts both roles.
  */
 export const AUDIENCE_GROUPS = [
   {
@@ -146,22 +150,23 @@ export const AUDIENCE_GROUPS = [
     listable: true,
     description: "Onboarded doctors and consultants",
   },
-  {
-    key: "STAFF",
-    label: "Staff",
-    role: "staff",
-    tone: "amber",
-    listable: false,
-    description: "Clinic and reception staff",
-  },
-  {
-    key: "ADMINS",
-    label: "Admins",
-    role: "admin",
-    tone: "purple",
-    listable: false,
-    description: "Panel administrators",
-  },
+  // Hidden for now — Staff and Admins are not notification audiences yet
+  // {
+  //   key: "STAFF",
+  //   label: "Staff",
+  //   role: "staff",
+  //   tone: "amber",
+  //   listable: false,
+  //   description: "Clinic and reception staff",
+  // },
+  // {
+  //   key: "ADMINS",
+  //   label: "Admins",
+  //   role: "admin",
+  //   tone: "purple",
+  //   listable: false,
+  //   description: "Panel administrators",
+  // },
 ];
 
 export const LISTABLE_GROUPS = AUDIENCE_GROUPS.filter((group) => group.listable);

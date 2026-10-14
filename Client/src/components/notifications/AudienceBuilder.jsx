@@ -67,24 +67,26 @@ const AudienceBuilder = ({ value, onChange, onResolve }) => {
     ["notification-audience", "count", "doctor"],
     { staleTime: 60000 },
   );
-  const staffCount = usePostQuery(
-    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
-    { mode: AUDIENCE_MODES.ROLE, roles: ["staff"] },
-    ["notification-audience", "count", "staff"],
-    { staleTime: 60000 },
-  );
-  const adminCount = usePostQuery(
-    API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
-    { mode: AUDIENCE_MODES.ROLE, roles: ["admin"] },
-    ["notification-audience", "count", "admin"],
-    { staleTime: 60000 },
-  );
+  // Hidden for now — Staff and Admins are commented out of AUDIENCE_GROUPS,
+  // so their cards (and these counts) are not shown.
+  // const staffCount = usePostQuery(
+  //   API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+  //   { mode: AUDIENCE_MODES.ROLE, roles: ["staff"] },
+  //   ["notification-audience", "count", "staff"],
+  //   { staleTime: 60000 },
+  // );
+  // const adminCount = usePostQuery(
+  //   API_ENDPOINTS.NOTIFICATIONS.AUDIENCE_COUNT,
+  //   { mode: AUDIENCE_MODES.ROLE, roles: ["admin"] },
+  //   ["notification-audience", "count", "admin"],
+  //   { staleTime: 60000 },
+  // );
 
   const groupCounts = {
     PATIENTS: patientCount.data?.data?.total,
     DOCTORS: doctorCount.data?.data?.total,
-    STAFF: staffCount.data?.data?.total,
-    ADMINS: adminCount.data?.data?.total,
+    // STAFF: staffCount.data?.data?.total,
+    // ADMINS: adminCount.data?.data?.total,
   };
 
   const csvParsed = useMemo(() => parseRecipientList(value.csv), [value.csv]);
