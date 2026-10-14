@@ -1,406 +1,287 @@
 import { Link, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
+import {
+  Bell,
+  CalendarDays,
+  ChevronRight,
+  FileText,
+  FolderTree,
+  Footprints,
+  HeartHandshake,
+  Image,
+  LayoutDashboard,
+  ListTree,
+  MessageSquareText,
+  Package,
+  ReceiptText,
+  ShieldCheck,
+  ShoppingBag,
+  Stethoscope,
+  Users,
+  X,
+} from "lucide-react";
+// Icons for the menu items that are hidden below — import them again when an
+// item is switched back on:
+// CreditCard (Subscriptions), CircleHelp (FAQ),
+// GraduationCap (Experts), Lightbulb (Tips), CalendarHeart (Trimester Plans),
+// Apple (Nutrition Plans), UtensilsCrossed (Meal Plans), Flower2 (Wellness),
+// Music (Musics), Zap (Daily Motivation), Hospital (Hospitals), FlaskConical (Labs)
 import useAuth from "../../hooks/useAuth";
+
+/*
+ * The menu, grouped the way an admin works: running the clinic, money,
+ * talking to patients, then the content and legal pages that change rarely.
+ *
+ * Profile is not a menu item: it opens from the user card at the bottom of
+ * this sidebar and from the account menu in the header.
+ */
+const ADMIN_MENU = [
+  {
+    title: "Overview",
+    items: [
+      { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      { name: "Appointments", path: "/appointments", icon: CalendarDays },
+      { name: "Patients", path: "/patients", icon: Users },
+      { name: "Doctors", path: "/doctors", icon: Stethoscope },
+      // Hidden for now — Hospitals and Labs are not ready yet
+      // { name: "Hospitals", path: "/hospitals", icon: Hospital },
+      // { name: "Labs", path: "/labs", icon: FlaskConical },
+    ],
+  },
+  {
+    title: "Revenue",
+    items: [
+      { name: "Patient Plans", path: "/patient-plans", icon: ReceiptText },
+      { name: "Packages", path: "/packages", icon: Package },
+      // Hidden for now — Packages covers add / edit / delete. The table view
+      // and its /subscriptions/add and /subscriptions/update/:id routes stay.
+      // { name: "Subscriptions", path: "/subscriptions", icon: CreditCard },
+    ],
+  },
+  {
+    title: "Engagement",
+    items: [
+      { name: "Notifications", path: "/notifications", icon: Bell },
+      { name: "Contact Inquiries", path: "/contact-inquiries", icon: MessageSquareText },
+      // Hidden for now — Daily Motivation is not ready yet
+      // { name: "Daily Motivation", path: "/daily-motivation", icon: Zap },
+    ],
+  },
+  {
+    title: "Content",
+    items: [
+      { name: "Categories", path: "/category", icon: FolderTree },
+      { name: "Subcategories", path: "/subcategories", icon: ListTree },
+      { name: "Prenatal Care Services", path: "/prenatal-cares", icon: HeartHandshake },
+      { name: "Products", path: "/products", icon: ShoppingBag },
+      { name: "Gallery", path: "/gallery", icon: Image },
+      // Hidden for now — FAQ is not ready yet
+      // { name: "FAQ", path: "/faq", icon: CircleHelp },
+      // Hidden for now — Experts and Tips are not ready yet
+      // { name: "Experts", path: "/experts", icon: GraduationCap },
+      // { name: "Tips", path: "/tips", icon: Lightbulb },
+      // Hidden for now — Trimester Plans and Nutrition Plans are not ready yet
+      // { name: "Pregnancy Trimester Plans", path: "/trimester", icon: CalendarHeart },
+      // { name: "Nutrition Plans", path: "/nutritions", icon: Apple },
+      // Hidden for now — Meal Plans and Wellness are not ready yet
+      // { name: "Meal Plans", path: "/meal-plans", icon: UtensilsCrossed },
+      // { name: "Wellness & Mindfulness", path: "/wellness-mindfulness", icon: Flower2 },
+      // Hidden for now — Musics is not ready yet
+      // { name: "Musics", path: "/musics", icon: Music },
+    ],
+  },
+  {
+    title: "Legal",
+    items: [
+      { name: "Privacy & Policies", path: "/privacies", icon: ShieldCheck },
+      { name: "Terms & Conditions", path: "/terms", icon: FileText },
+    ],
+  },
+];
+
+// Every role sees at least this.
+const COMMON_MENU = [
+  {
+    title: null,
+    items: [{ name: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
+  },
+];
+
+const menuForRole = (role) => {
+  switch (role) {
+    case "admin":
+      return ADMIN_MENU;
+    // case "staff":
+    //   return [
+    //     ...COMMON_MENU,
+    //     {
+    //       title: "Clinic",
+    //       items: [
+    //         { name: "Patients", path: "/patients", icon: Users },
+    //         { name: "Appointments", path: "/appointments", icon: CalendarDays },
+    //       ],
+    //     },
+    //   ];
+    // case "receptionist":
+    //   return [
+    //     ...COMMON_MENU,
+    //     {
+    //       title: "Clinic",
+    //       items: [{ name: "Appointments", path: "/appointments", icon: CalendarDays }],
+    //     },
+    //   ];
+    default:
+      return COMMON_MENU;
+  }
+};
+
+// Keep the parent item highlighted on detail routes like /patients/:id
+const isActivePath = (pathname, path) =>
+  pathname === path || pathname.startsWith(`${path}/`);
 
 const Sidebar = ({ mobileSidebarOpen, setMobileSidebarOpen }) => {
   const location = useLocation();
   const { user } = useAuth();
   const userData = user || {};
+  const role = userData?.role || "";
+  const roleLabel = role ? `${role.charAt(0).toUpperCase()}${role.slice(1)}` : "User";
 
-  const icons = {
-    dashboard:
-      "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-    profile:
-      "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-    users:
-      "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
-    categories: "M19 11H5m14-4H5m14 8H5m14-4H5",
-    subcategories: "M4 6h16M4 10h16M4 14h16M4 18h16",
-    products: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-    enquiries:
-      "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-    prenatal_services:
-      "M12 22s8-4 8-12a8 8 0 10-16 0c0 8 8 12 8 12zm0-10a4 4 0 110-8 4 4 0 010 8z",
-    nutrition:
-      "M12 3C7 3 3 7 3 12c0 3.87 3.13 7 7 7h4c3.87 0 7-3.13 7-7 0-5-4-9-9-9zm0 4a3 3 0 100 6 3 3 0 000-6z",
-    meal_plans: "M4 6h16M4 10h16M4 14h16M4 18h16m-8-8v8",
-    experts:
-      "M17 20v-2a3 3 0 00-6 0v2m6 0H7v-2a3 3 0 016 0v2m-6 0H4v-2a5 5 0 0110 0v2",
-    tips: "M12 3a6 6 0 014 10 4 4 0 01-1 3v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2a4 4 0 01-1-3 6 6 0 014-10z",
-    trimester_plans:
-      "M12 21c4.418 0 8-3.582 8-8a8 8 0 10-13.856 5.856A8 8 0 0012 21zm0-9a3 3 0 110-6 3 3 0 010 6z",
-    wellness:
-      "M12 20c4 0 7-3 8-6-2-1-4-2-8-2s-6 1-8 2c1 3 4 6 8 6zm0-8a4 4 0 100-8 4 4 0 000 8z",
-    subscriptions:
-      "M12 8c-1.657 0-3 1.343-3 3v1H7a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1v-6a1 1 0 00-1-1h-2v-1c0-1.657-1.343-3-3-3zm-1 4v-1a1 1 0 112 0v1h-2z",
-    gallery:
-      "M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm3 3a2 2 0 114 0 2 2 0 01-4 0zm10 8l-4-5-3 4H7l5-6 5 7h-2z",
-    privacy_policy:
-      "M12 3l7 4v5c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V7l7-4zm0 4a3 3 0 00-3 3c0 1.3.84 2.4 2 2.82V15a1 1 0 002 0v-2.18A3 3 0 0015 10a3 3 0 00-3-3z",
-    terms_conditions:
-      "M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm8 1v5h5M8 11h8M8 15h8M8 19h5",
-    faq: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-    musics:
-      "M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3",
-    appointments:
-      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-    daily_motivation: "M13 10V3L4 14h7v7l9-11h-7z",
-    packages: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-    patient_profile: "M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z",
-    doctors:
-      "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-    hospitals:
-      "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-    notifications:
-      "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
-    labs: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
-  };
-
-  const getMenuItems = () => {
-    const commonItems = [
-      {
-        name: "Dashboard",
-        path: "/dashboard",
-        icon: icons.dashboard,
-        color: "text-blue-500",
-      },
-      {
-        name: "Profile",
-        path: "/profile",
-        icon: icons.profile,
-        color: "text-green-500",
-      },
-    ];
-    switch (userData?.role) {
-      case "admin":
-        return [
-          ...commonItems,
-          // Hidden for now — Experts and Tips are not ready yet
-          // {
-          //   name: "Experts",
-          //   path: "/experts",
-          //   icon: icons.experts,
-          //   color: "text-yellow-500",
-          // },
-          // {
-          //   name: "Tips",
-          //   path: "/tips",
-          //   icon: icons.tips,
-          //   color: "text-blue-600",
-          // },
-          {
-            name: "Categories",
-            path: "/category",
-            icon: icons.categories,
-            color: "text-orange-500",
-          },
-          {
-            name: "Subcategories",
-            path: "/subcategories",
-            icon: icons.subcategories,
-            color: "text-red-500",
-          },
-          {
-            name: "Prenatal Care Services",
-            path: "/prenatal-cares",
-            icon: icons.prenatal_services,
-            color: "text-pink-500",
-          },
-          // Hidden for now — Trimester Plans and Nutrition Plans are not ready yet
-          // {
-          //   name: "Pregnancy Trimester Plans",
-          //   path: "/trimester",
-          //   icon: icons.trimester_plans,
-          //   color: "text-green-500",
-          // },
-          // {
-          //   name: "Nutrition Plans",
-          //   path: "/nutritions",
-          //   icon: icons.nutrition,
-          //   color: "text-purple-500",
-          // },
-          // Hidden for now — Meal Plans and Wellness are not ready yet
-          // {
-          //   name: "Meal Plans",
-          //   path: "/meal-plans",
-          //   icon: icons.meal_plans,
-          //   color: "text-violet-500",
-          // },
-          // {
-          //   name: "Wellness & Mindfulness",
-          //   path: "/wellness-mindfulness",
-          //   icon: icons.wellness,
-          //   color: "text-indigo-500",
-          // },
-          {
-            name: "Products",
-            path: "/products",
-            icon: icons.products,
-            color: "text-sky-500",
-          },
-          {
-            name: "Contact Inquiries",
-            path: "/contact-inquiries",
-            icon: icons.enquiries,
-            color: "text-emerald-500",
-          },
-          {
-            name: "Notifications",
-            path: "/notifications",
-            icon: icons.notifications,
-            color: "text-rose-600",
-          },
-          {
-            name: "Subscriptions",
-            path: "/subscriptions",
-            icon: icons.subscriptions,
-            color: "text-cyan-600",
-          },
-          {
-            name: "Gallery",
-            path: "/gallery",
-            icon: icons.gallery,
-            color: "text-teal-500",
-          },
-          {
-            name: "FAQ",
-            path: "/faq",
-            icon: icons.faq,
-            color: "text-amber-500",
-          },
-          // Hidden for now — Musics is not ready yet
-          // {
-          //   name: "Musics",
-          //   path: "/musics",
-          //   icon: icons.musics,
-          //   color: "text-rose-500",
-          // },
-          {
-            name: "Appointments",
-            path: "/appointments",
-            icon: icons.appointments,
-            color: "text-indigo-600",
-          },
-          // Hidden for now — Daily Motivation is not ready yet
-          // {
-          //   name: "Daily Motivation",
-          //   path: "/daily-motivation",
-          //   icon: icons.daily_motivation,
-          //   color: "text-yellow-600",
-          // },
-          {
-            name: "Packages",
-            path: "/packages",
-            icon: icons.packages,
-            color: "text-violet-600",
-          },
-          {
-            name: "Patients",
-            path: "/patients",
-            icon: icons.patient_profile,
-            color: "text-pink-600",
-          },
-          {
-            name: "Doctors",
-            path: "/doctors",
-            icon: icons.doctors,
-            color: "text-teal-600",
-          },
-          // Hidden for now — Hospitals and Labs are not ready yet
-          // {
-          //   name: "Hospitals",
-          //   path: "/hospitals",
-          //   icon: icons.hospitals,
-          //   color: "text-orange-600",
-          // },
-          // {
-          //   name: "Labs",
-          //   path: "/labs",
-          //   icon: icons.labs,
-          //   color: "text-purple-600",
-          // },
-          {
-            name: "Privacy & Policies",
-            path: "/privacies",
-            icon: icons.privacy_policy,
-            color: "text-blue-600",
-          },
-          {
-            name: "Terms & Conditions",
-            path: "/terms",
-            icon: icons.terms_conditions,
-            color: "text-sky-500",
-          },
-        ];
-      // case "staff":
-      // return [
-      //   ...commonItems,
-      //   {
-      //     name: "Patients",
-      //     path: "/patients",
-      //     icon: icons.patients,
-      //     color: "text-green-600",
-      //   },
-      //   {
-      //     name: "Appointments",
-      //     path: "/appointments",
-      //     icon: icons.appointments,
-      //     color: "text-blue-600",
-      //   },
-      // ];
-      // case "receptionist":
-      //   return [
-      //     ...commonItems,
-      //     {
-      //       name: "Appointments",
-      //       path: "/appointments",
-      //       icon: icons.appointments,
-      //       color: "text-blue-600",
-      //     },
-      //   ];
-      default:
-        return commonItems;
-    }
-  };
-
-  const menuItems = getMenuItems();
-  console.log("User object:", user);
-  console.log("User data extracted:", userData);
-  console.log("Role value:", userData?.role);
+  const menu = menuForRole(role);
+  const closeOnMobile = () => setMobileSidebarOpen(false);
+  const onProfile = location.pathname === "/profile";
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-gray-200 bg-white shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-none ${
         mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
       } lg:block`}
     >
-      <div className="flex flex-col h-full">
-        {/* Mobile close button */}
-        <button
-          onClick={() => setMobileSidebarOpen(false)}
-          className="lg:hidden absolute top-4 right-4 p-2 text-white rounded-lg hover:bg-white hover:bg-opacity-20 transition-all duration-200"
-          aria-label="Close sidebar"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className="flex h-full flex-col">
+        {/* Brand — same height as the header so their borders line up */}
+        <div className="flex h-20 flex-shrink-0 items-center gap-3 border-b border-gray-200 px-5">
+          <Link
+            to="/dashboard"
+            onClick={closeOnMobile}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-sm">
+              <Footprints size={22} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-base font-bold leading-tight text-gray-900">
+                Hiranyagarbh
+              </span>
+              <span className="block truncate text-xs text-gray-500">
+                GarbhaSanskar · {roleLabel} panel
+              </span>
+            </span>
+          </Link>
 
-        {/* Sidebar header - Logo area with enhanced design - FIXED */}
-        <div className="flex-shrink-0 flex items-center justify-center h-20 px-6 bg-gradient-to-r from-blue-600 to-purple-600">
-          <div className="flex items-center space-x-3">
-            <div>
-              <h1 className="text-xl font-bold text-white">
-                Hiranyagarbh GarbhaSanskar
-              </h1>
+          <button
+            type="button"
+            onClick={closeOnMobile}
+            className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Menu — scrolls on its own; brand and user card stay put */}
+        <nav
+          aria-label="Main"
+          className="flex-1 space-y-6 overflow-y-auto px-3 py-5 [scrollbar-width:thin]"
+        >
+          {menu.map((group, index) => (
+            <div key={group.title || index}>
+              {group.title ? (
+                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  {group.title}
+                </p>
+              ) : null}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = isActivePath(location.pathname, item.path);
+                  const Icon = item.icon;
+
+                  return (
+                    <li key={item.path}>
+                      <Link
+                        to={item.path}
+                        onClick={closeOnMobile}
+                        aria-current={active ? "page" : undefined}
+                        className={`group relative flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150 ${
+                          active
+                            ? "bg-gradient-to-r from-blue-50 to-purple-50 font-semibold text-blue-700"
+                            : "font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                      >
+                        {active ? (
+                          <span
+                            aria-hidden="true"
+                            className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-gradient-to-b from-blue-600 to-purple-600"
+                          />
+                        ) : null}
+                        {Icon ? (
+                          <Icon
+                            size={18}
+                            aria-hidden="true"
+                            className={`flex-shrink-0 transition-colors ${
+                              active ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"
+                            }`}
+                          />
+                        ) : null}
+                        <span className="truncate">{item.name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          </div>
-        </div>
-        {/* Role badge - FIXED */}
-        <div className="flex-shrink-0 px-6 py-4 bg-gray-50">
-          <div className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-            <div className="w-2 h-2 mr-2 bg-white rounded-full animate-pulse"></div>
-            {userData?.role?.charAt(0).toUpperCase() +
-              userData?.role?.slice(1) || "User"}{" "}
-            Panel
-          </div>
-        </div>
-
-        {/* Menu items with enhanced design - SCROLLABLE */}
-        <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          {menuItems.map((item) => {
-            // Keep the parent item highlighted on detail routes like /patients/:id
-            const isActive =
-              location.pathname === item.path ||
-              location.pathname.startsWith(`${item.path}/`);
-
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                onClick={() => setMobileSidebarOpen(false)}
-                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-[1.02]"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:scale-[1.01]"
-                }`}
-              >
-                <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-all duration-200 ${
-                    isActive
-                      ? " bg-opacity-20"
-                      : "bg-gray-100 group-hover:bg-gray-200"
-                  }`}
-                >
-                  <svg
-                    className={`w-5 h-5 transition-colors duration-200 ${
-                      isActive ? "text-white" : item.color
-                    }`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={item.icon}
-                    />
-                  </svg>
-                </div>
-                <span className="flex-1">{item.name}</span>
-                {isActive && (
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                )}
-              </Link>
-            );
-          })}
+          ))}
         </nav>
 
-        {/* User info at bottom with enhanced design - FIXED */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center p-3 bg-white rounded-xl shadow-sm">
-            <div className="relative">
+        {/* User card — opens the profile page */}
+        <div className="flex-shrink-0 border-t border-gray-200 p-3">
+          <Link
+            to="/profile"
+            onClick={closeOnMobile}
+            aria-label="Open my profile"
+            aria-current={onProfile ? "page" : undefined}
+            className={`group flex items-center gap-3 rounded-xl p-2.5 transition-colors ${
+              onProfile
+                ? "bg-gradient-to-r from-blue-50 to-purple-50"
+                : "hover:bg-gray-50"
+            }`}
+          >
+            <span className="relative flex-shrink-0">
               {userData?.image ? (
                 <img
                   src={userData.image}
-                  alt={userData.name}
-                  className="w-12 h-12 rounded-full ring-2 ring-blue-500"
+                  alt=""
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
                 />
               ) : (
-                <div className="flex items-center justify-center w-12 h-12 text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-                  <span className="text-lg font-bold">
-                    {userData?.name?.charAt(0).toUpperCase() || "U"}
-                  </span>
-                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
+                  {userData?.name?.charAt(0).toUpperCase() || "U"}
+                </span>
               )}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-semibold text-gray-800">
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold capitalize text-gray-900">
                 {userData?.name || "User"}
-              </p>
-              <p className="text-xs text-gray-500 capitalize">
-                {userData?.role || "User"}
-              </p>
-            </div>
-            <div className="text-gray-400 hover:text-gray-600 cursor-pointer">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-              </svg>
-            </div>
-          </div>
+              </span>
+              <span className="block truncate text-xs text-gray-500">View profile</span>
+            </span>
+            <ChevronRight
+              size={18}
+              aria-hidden="true"
+              className={`flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${
+                onProfile ? "text-blue-600" : "text-gray-400 group-hover:text-blue-600"
+              }`}
+            />
+          </Link>
         </div>
       </div>
     </aside>

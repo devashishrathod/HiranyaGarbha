@@ -62,7 +62,7 @@ const MainLayout = () => {
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
