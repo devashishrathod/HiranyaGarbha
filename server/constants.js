@@ -126,6 +126,23 @@ module.exports = {
     BONUS: "BONUS",
   }),
 
+  /**
+   * What the admin listing shows instead of the stored status. Expiry is swept
+   * hourly, so the listing computes it too rather than show a lapsed plan as
+   * ACTIVE until the next sweep. ABANDONED is a checkout still PENDING_PAYMENT
+   * past CHECKOUT_TIMEOUT_MINUTES (nothing closes those yet).
+   */
+  SUBSCRIPTION_STATES: Object.freeze([
+    "ACTIVE",
+    "SCHEDULED",
+    "PENDING_PAYMENT",
+    "ABANDONED",
+    "EXPIRED",
+    "CANCELLED",
+    "UPGRADED",
+    "REFUNDED",
+  ]),
+
   /** Days a plan stays usable past its endDate while the patient renews. */
   GRACE_DAYS: 3,
 

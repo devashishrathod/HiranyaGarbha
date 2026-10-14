@@ -283,7 +283,7 @@ export const SubscriptionAddEdit = () => {
 
     const onSuccess = (res) => {
       toast.success(res?.message || (isEditMode ? "Updated" : "Created"));
-      setTimeout(() => navigate("/subscriptions"), 800);
+      setTimeout(() => navigate("/packages"), 800);
     };
 
     const onError = (error) => {
@@ -720,7 +720,7 @@ export const SubscriptionAddEdit = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/subscriptions")}
+              onClick={() => navigate("/packages")}
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-3 px-6 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
               disabled={isLoading}
             >

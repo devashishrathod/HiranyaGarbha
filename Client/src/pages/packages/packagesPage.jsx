@@ -1,11 +1,22 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import {
+  Check,
+  Clock,
+  Crown,
+  Gift,
+  Package as PackageIcon,
+  Pencil,
+  Plus,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
 
 import { useDeleteMutation, useGetQuery } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
-import Loader from "../../components/UI/Loader";
-import NotFound from "../../components/UI/NotFound";
+import { Button, EmptyState, Modal, PageHeader } from "../../components/UI/kit";
 import {
   PLAN_TRIMESTERS,
   TRIMESTER_LABELS,
@@ -13,6 +24,7 @@ import {
   formatPrice,
   getTierTheme,
 } from "../../constants/subscription";
+import { buildQuery } from "../../utils/ids";
 
 /* A package saved from the panel always carries the premium-feature groups,
    so emptiness is what decides whether the section renders, not presence. */
@@ -21,53 +33,8 @@ const premiumGroupsWithItems = (premiumFeatures) =>
     ([, features]) => Array.isArray(features) && features.length,
   );
 
-const CheckIcon = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
-  </svg>
-);
-
-const ClockIcon = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-);
-
-const UserIcon = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-    />
-  </svg>
-);
+const MODULES_ON_CARD = 5;
+const INCLUDES_ON_CARD = 4;
 
 /* Price block shared by the card header and the detail modal */
 const PriceTag = ({ plan, size = "card" }) => {
@@ -77,10 +44,8 @@ const PriceTag = ({ plan, size = "card" }) => {
   const originalClass = size === "modal" ? "text-xl" : "text-sm";
 
   return (
-    <div className="flex items-baseline space-x-2">
-      <span className={`${priceClass} font-bold`}>
-        {formatPrice(plan.price)}
-      </span>
+    <div className="flex items-baseline gap-2">
+      <span className={`${priceClass} font-bold`}>{formatPrice(plan.price)}</span>
       {typeof plan.originalPrice === "number" && plan.originalPrice > 0 ? (
         <span className={`${originalClass} line-through opacity-75`}>
           {formatPrice(plan.originalPrice)}
@@ -90,576 +55,540 @@ const PriceTag = ({ plan, size = "card" }) => {
   );
 };
 
+const CheckList = ({ items, limit, tone, moreLabel }) => (
+  <ul className="space-y-1.5">
+    {items.slice(0, limit).map((item, index) => (
+      <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+        <Check size={15} className={`mt-0.5 shrink-0 ${tone}`} aria-hidden="true" />
+        <span>{item}</span>
+      </li>
+    ))}
+    {items.length > limit ? (
+      <li className="pl-[23px] text-xs font-medium text-gray-500">
+        +{items.length - limit} more {moreLabel}
+      </li>
+    ) : null}
+  </ul>
+);
+
+/**
+ * One package. Every card is the same shape — header, a fixed amount of
+ * content, then the actions pinned to the bottom — so a long package does not
+ * stretch the row and leave its neighbours with a gap above their buttons.
+ * The full lists live in the detail view.
+ */
+const PackageCard = ({ pkg, trimester, onView, onEdit, onDelete }) => {
+  const theme = getTierTheme(pkg);
+  const plan = pkg.selectedPlan;
+  const premiumCount = premiumGroupsWithItems(pkg.premiumFeatures).reduce(
+    (count, [, features]) => count + features.length,
+    0,
+  );
+  const samePriceEverywhere = plan?.trimester && plan.trimester !== trimester;
+
+  return (
+    <article
+      className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${
+        pkg.isPopular ? "border-purple-300 ring-2 ring-purple-500/50" : "border-gray-200/80"
+      } ${pkg.isActive ? "" : "opacity-75"}`}
+    >
+      <header className={`bg-gradient-to-r ${theme.color} px-5 py-5 text-white`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-bold">{pkg.name}</h2>
+            {pkg.subtitle ? (
+              <p className="truncate text-sm text-white/85">{pkg.subtitle}</p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {pkg.badge ? (
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold">
+                {pkg.badge}
+              </span>
+            ) : null}
+            {!pkg.isActive ? (
+              <span className="rounded-full bg-gray-900/40 px-2.5 py-0.5 text-xs font-semibold">
+                Inactive
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-4">
+          <PriceTag plan={plan} />
+          <p className="mt-1 text-xs text-white/85">
+            {samePriceEverywhere
+              ? "Same price in every trimester"
+              : plan?.durationInDays
+                ? `${plan.durationInDays} days access`
+                : " "}
+          </p>
+        </div>
+      </header>
+
+      <div className="flex flex-1 flex-col gap-5 p-5">
+        <div className="space-y-1.5 text-sm text-gray-600">
+          <p className="flex items-center gap-2">
+            <Clock size={15} className="shrink-0 text-gray-400" aria-hidden="true" />
+            <span className="truncate">{pkg.duration || "Duration not set"}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <UserRound size={15} className="shrink-0 text-gray-400" aria-hidden="true" />
+            <span className="truncate">{pkg.idealFor || "Audience not set"}</span>
+          </p>
+        </div>
+
+        {pkg.modules?.length ? (
+          <section>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Course modules · {pkg.modules.length}
+            </h3>
+            <CheckList items={pkg.modules} limit={MODULES_ON_CARD} tone="text-emerald-500" moreLabel="modules" />
+          </section>
+        ) : null}
+
+        {pkg.includes?.length ? (
+          <section>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Includes
+            </h3>
+            <CheckList items={pkg.includes} limit={INCLUDES_ON_CARD} tone="text-blue-500" moreLabel="features" />
+          </section>
+        ) : null}
+
+        {pkg.plans?.length > 1 ? (
+          <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+            {pkg.plans.map((item) => (
+              <div
+                key={item.trimester}
+                className={`flex items-center justify-between px-3 py-2 text-sm ${
+                  item.trimester === trimester ? "bg-gray-50 font-semibold text-gray-900" : "text-gray-600"
+                }`}
+              >
+                <span>{TRIMESTER_LABELS[item.trimester] || item.trimester}</span>
+                <span className="tabular-nums">{formatPrice(item.price)}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {premiumCount ? (
+          <p className="inline-flex items-center gap-2 self-start rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">
+            <Crown size={14} aria-hidden="true" />
+            {premiumCount} premium features
+          </p>
+        ) : null}
+
+        <div className="mt-auto flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => onView(pkg)}
+            className={`flex-1 rounded-lg bg-gradient-to-r ${theme.color} px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90`}
+          >
+            View details
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit(pkg)}
+            aria-label={`Edit ${pkg.name}`}
+            title="Edit"
+            className="flex h-10 w-11 items-center justify-center rounded-lg border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 hover:text-blue-600"
+          >
+            <Pencil size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(pkg)}
+            aria-label={`Delete ${pkg.name}`}
+            title="Delete"
+            className="flex h-10 w-11 items-center justify-center rounded-lg border border-gray-300 text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+};
+
 const PackagesPage = () => {
   const [trimester, setTrimester] = useState(PLAN_TRIMESTERS.FIRST);
+  const [showInactive, setShowInactive] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const navigate = useNavigate();
 
-  const endpoint = `${API_ENDPOINTS.SUBSCRIPTIONS.GET_PACKAGES}?trimester=${trimester}`;
+  const endpoint = `${API_ENDPOINTS.SUBSCRIPTIONS.GET_PACKAGES}${buildQuery({
+    trimester,
+    includeInactive: showInactive ? "true" : undefined,
+  })}`;
 
   const {
     data: packagesData,
     isLoading,
     error,
     refetch,
-  } = useGetQuery(endpoint, ["packages", trimester]);
+  } = useGetQuery(endpoint, ["packages", trimester, showInactive]);
 
   const { mutate: deletePackage, isPending: isDeleting } = useDeleteMutation(
     API_ENDPOINTS.SUBSCRIPTIONS.DELETE,
   );
 
-  const packages = useMemo(
-    () => packagesData?.data?.packages || [],
-    [packagesData],
-  );
-  const bonusCourses = useMemo(
-    () => packagesData?.data?.bonusCourses || [],
-    [packagesData],
-  );
+  const packages = useMemo(() => packagesData?.data?.packages || [], [packagesData]);
+  const bonusCourses = useMemo(() => packagesData?.data?.bonusCourses || [], [packagesData]);
 
   const handleAddNew = () => navigate("/subscriptions/add");
   const handleEdit = (pkg) => navigate(`/subscriptions/update/${pkg._id}`);
 
-  const handleDelete = (pkg) => {
-    if (!window.confirm(`Delete "${pkg.name}"?`)) return;
-
-    deletePackage(pkg._id, {
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    deletePackage(pendingDelete._id, {
       onSuccess: (res) => {
-        toast.success(res?.message || "Package deleted successfully!");
-        setSelectedPackage(null);
+        toast.success(res?.message || "Package deleted");
+        if (selectedPackage?._id === pendingDelete._id) setSelectedPackage(null);
+        setPendingDelete(null);
         refetch();
       },
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader size={100} color="#3B82F6" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-100 p-4 rounded border border-red-300 m-6">
-        <h3 className="text-red-500 font-bold">Something went wrong</h3>
-        <p>{error?.response?.data?.message || error.message}</p>
-        <button
-          onClick={() => refetch()}
-          className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col gap-6 mb-10 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Pregnancy Care Packages
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl">
-              Choose the perfect package for your pregnancy journey. From
-              foundational basics to complete conscious parenting.
-            </p>
-          </div>
-          <button
-            onClick={handleAddNew}
-            className="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-150"
-          >
-            + Add New Package
-          </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Packages"
+        subtitle="The plans patients can buy, priced by the trimester they join in."
+        actions={
+          <>
+            <label className="inline-flex cursor-pointer select-none items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(event) => setShowInactive(event.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Show inactive
+            </label>
+            <Button icon={Plus} onClick={handleAddNew}>
+              Add package
+            </Button>
+          </>
+        }
+      />
+
+      {/* Trimester — the price a mother pays depends on how much journey is left */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm font-medium text-gray-600">Prices for mothers joining in</span>
+        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-gray-100 p-1" role="group" aria-label="Trimester">
+          {TRIMESTER_TABS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={trimester === value}
+              onClick={() => setTrimester(value)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                trimester === value
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {TRIMESTER_LABELS[value]}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Trimester selector - pricing changes with how much journey is left */}
-        <div className="mb-10">
-          <p className="text-sm font-medium text-gray-600 mb-3">
-            Pricing for mothers joining in
-          </p>
-          <div className="inline-flex flex-wrap gap-2 p-1 bg-gray-100 rounded-xl">
-            {TRIMESTER_TABS.map((value) => (
-              <button
-                key={value}
-                onClick={() => setTrimester(value)}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  trimester === value
-                    ? "bg-white text-purple-700 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                {TRIMESTER_LABELS[value]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {!packages.length ? (
-          <NotFound
-            title="No Packages Found"
-            type="default"
-            message="No active packages yet. Create one to get started."
-            actionText="Create New Package"
-            onAction={handleAddNew}
-          />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-            {packages.map((pkg) => {
-              const theme = getTierTheme(pkg);
-              const plan = pkg.selectedPlan;
-
-              return (
-                <div
-                  key={pkg._id}
-                  className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                    pkg.isPopular
-                      ? "ring-2 ring-purple-500 transform scale-105"
-                      : ""
-                  }`}
-                >
-                  {pkg.badge && (
-                    <div
-                      className={`absolute top-0 right-0 px-4 py-1 bg-gradient-to-r ${theme.color} text-white text-sm font-semibold`}
-                    >
-                      {pkg.badge}
-                    </div>
-                  )}
-
-                  {/* Header */}
-                  <div
-                    className={`bg-gradient-to-r ${theme.color} p-6 text-white`}
-                  >
-                    <h2 className="text-2xl font-bold mb-1">{pkg.name}</h2>
-                    <p className="text-sm opacity-90 mb-2">{pkg.subtitle}</p>
-                    <PriceTag plan={plan} />
-                    {plan?.trimester && plan.trimester !== trimester ? (
-                      <p className="mt-1 text-xs opacity-90">
-                        Same price in every trimester
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {/* Body */}
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <div className="flex items-center text-sm text-gray-600 mb-2">
-                        <ClockIcon className="w-4 h-4 mr-2" />
-                        <span>Duration: {pkg.duration || "-"}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <UserIcon className="w-4 h-4 mr-2" />
-                        <span>{pkg.idealFor || "-"}</span>
-                      </div>
-                    </div>
-
-                    {/* Modules */}
-                    {pkg.modules?.length ? (
-                      <div className="mb-4">
-                        <h3 className="font-semibold text-gray-800 mb-3">
-                          Course Modules ({pkg.modules.length})
-                        </h3>
-                        <ul className="space-y-2">
-                          {pkg.modules.slice(0, 6).map((module, index) => (
-                            <li
-                              key={index}
-                              className="flex items-start text-sm text-gray-600"
-                            >
-                              <CheckIcon className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
-                              {module}
-                            </li>
-                          ))}
-                          {pkg.modules.length > 6 && (
-                            <li className="text-sm text-gray-500 italic">
-                              +{pkg.modules.length - 6} more modules
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    {/* Includes */}
-                    {pkg.includes?.length ? (
-                      <div className="mb-6">
-                        <h3 className="font-semibold text-gray-800 mb-3">
-                          Includes
-                        </h3>
-                        <ul className="space-y-2">
-                          {pkg.includes.slice(0, 4).map((item, index) => (
-                            <li
-                              key={index}
-                              className="flex items-start text-sm text-gray-600"
-                            >
-                              <CheckIcon className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
-                              {item}
-                            </li>
-                          ))}
-                          {pkg.includes.length > 4 && (
-                            <li className="text-sm text-gray-500 italic">
-                              +{pkg.includes.length - 4} more features
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    {/* All trimester prices at a glance */}
-                    {pkg.plans?.length > 1 ? (
-                      <div className="mb-6 rounded-lg border border-gray-200 divide-y divide-gray-100">
-                        {pkg.plans.map((item) => (
-                          <div
-                            key={item.trimester}
-                            className={`flex items-center justify-between px-3 py-2 text-sm ${
-                              item.trimester === trimester
-                                ? "bg-gray-50 font-semibold text-gray-800"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            <span>
-                              {TRIMESTER_LABELS[item.trimester] ||
-                                item.trimester}
-                            </span>
-                            <span>{formatPrice(item.price)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {/* Premium Features for Elite */}
-                    {pkg.premiumFeatures?.medicalCare?.length ? (
-                      <div className="mb-6 p-4 bg-amber-50 rounded-lg">
-                        <h3 className="font-semibold mb-3 text-amber-800">
-                          Premium Features
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">
-                              Medical Care:
-                            </span>
-                            <ul className="mt-1 space-y-1 text-gray-600">
-                              {pkg.premiumFeatures.medicalCare.map(
-                                (item, index) => (
-                                  <li key={index} className="flex items-start">
-                                    <CheckIcon className="w-3 h-3 mr-2 text-amber-500 flex-shrink-0 mt-0.5" />
-                                    {item}
-                                  </li>
-                                ),
-                              )}
-                            </ul>
-                          </div>
-                          {pkg.premiumFeatures.afterDelivery?.length ? (
-                            <div>
-                              <span className="font-medium text-gray-700">
-                                After Delivery:
-                              </span>
-                              <ul className="mt-1 space-y-1 text-gray-600">
-                                {pkg.premiumFeatures.afterDelivery.map(
-                                  (item, index) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-start"
-                                    >
-                                      <CheckIcon className="w-3 h-3 mr-2 text-amber-500 flex-shrink-0 mt-0.5" />
-                                      {item}
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(pkg)}
-                        className="flex-1 py-2 rounded-lg font-semibold text-blue-600 border border-blue-600 hover:bg-blue-50 transition-colors duration-200"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(pkg)}
-                        disabled={isDeleting}
-                        className="flex-1 py-2 rounded-lg font-semibold text-red-600 border border-red-600 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setSelectedPackage(pkg)}
-                      className={`mt-2 w-full py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${theme.color} hover:opacity-90 transition-opacity duration-200`}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Bonus Courses Section */}
-        {bonusCourses.length ? (
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 mb-16">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                Bonus Courses
-              </h2>
-              <p className="text-gray-600">
-                Optional add-ons to enhance your pregnancy journey
-              </p>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((key) => (
+            <div key={key} className="h-[520px] animate-pulse rounded-2xl border border-gray-200/80 bg-white">
+              <div className="h-36 rounded-t-2xl bg-gray-200" />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bonusCourses.map((course, index) => (
-                <div
-                  key={course._id}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow duration-200"
-                >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <div className="w-10 h-10 shrink-0 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {index + 1}
-                    </div>
-                    <button
-                      onClick={() => handleEdit(course)}
-                      className="font-medium text-gray-800 text-left truncate hover:text-blue-600"
-                      title={`Edit ${course.name}`}
-                    >
-                      {course.name}
-                    </button>
-                  </div>
-                  <span className="shrink-0 text-lg font-bold text-green-600">
-                    {formatPrice(course.selectedPlan?.price)}
-                  </span>
-                </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-gray-200/80 bg-white shadow-sm">
+          <EmptyState
+            icon={PackageIcon}
+            title="Packages could not load"
+            message={error?.response?.data?.message || error.message}
+            action={<Button onClick={() => refetch()}>Try again</Button>}
+          />
+        </div>
+      ) : (
+        <>
+          {packages.length ? (
+            <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {packages.map((pkg) => (
+                <PackageCard
+                  key={pkg._id}
+                  pkg={pkg}
+                  trimester={trimester}
+                  onView={setSelectedPackage}
+                  onEdit={handleEdit}
+                  onDelete={setPendingDelete}
+                />
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : (
+            <div className="rounded-2xl border border-gray-200/80 bg-white shadow-sm">
+              <EmptyState
+                icon={PackageIcon}
+                title="No packages yet"
+                message={
+                  showInactive
+                    ? "There are no packages at all. Create one to get started."
+                    : "No active packages. Create one, or turn on “Show inactive”."
+                }
+                action={
+                  <Button icon={Plus} onClick={handleAddNew}>
+                    Add package
+                  </Button>
+                }
+              />
+            </div>
+          )}
 
-        {/* Package Detail Modal */}
-        {selectedPackage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div
-                className={`bg-gradient-to-r ${getTierTheme(selectedPackage).color} p-8 text-white sticky top-0`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-1">
-                      {selectedPackage.name}
-                    </h2>
-                    <p className="text-lg opacity-90 mb-3">
-                      {selectedPackage.subtitle}
-                    </p>
-                    <PriceTag
-                      plan={selectedPackage.selectedPlan}
-                      size="modal"
-                    />
-                    <p className="mt-1 text-sm opacity-90">
-                      {TRIMESTER_LABELS[
-                        selectedPackage.selectedPlan?.trimester
-                      ] || ""}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedPackage(null)}
-                    className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors duration-150"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+          {bonusCourses.length ? (
+            <section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                    <Gift size={18} className="text-emerald-600" aria-hidden="true" />
+                    Bonus courses
+                  </h2>
+                  <p className="mt-0.5 text-sm text-gray-500">
+                    Add-ons a patient can buy alongside any package
+                  </p>
                 </div>
               </div>
 
-              <div className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                    <ClockIcon className="w-6 h-6 mr-3 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-gray-500">Duration</p>
-                      <p className="font-semibold text-gray-800">
-                        {selectedPackage.duration || "-"}
-                      </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {bonusCourses.map((course) => (
+                  <div
+                    key={course._id}
+                    className={`flex items-center gap-3 rounded-xl border border-gray-200 p-3 transition-shadow hover:shadow-sm ${
+                      course.isActive ? "" : "opacity-70"
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 text-white">
+                      <Gift size={18} aria-hidden="true" />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPackage(course)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <span className="block truncate text-sm font-semibold text-gray-900 hover:text-blue-600" title={course.name}>
+                        {course.name}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {course.selectedPlan?.durationInDays
+                          ? `${course.selectedPlan.durationInDays} days`
+                          : "Self-paced"}
+                        {course.isActive ? "" : " · Inactive"}
+                      </span>
+                    </button>
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-emerald-700">
+                      {formatPrice(course.selectedPlan?.price)}
+                    </span>
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(course)}
+                        aria-label={`Edit ${course.name}`}
+                        className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600"
+                      >
+                        <Pencil size={15} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDelete(course)}
+                        aria-label={`Delete ${course.name}`}
+                        className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                    <UserIcon className="w-6 h-6 mr-3 text-purple-600" />
-                    <div>
-                      <p className="text-sm text-gray-500">Ideal For</p>
-                      <p className="font-semibold text-gray-800">
-                        {selectedPackage.idealFor || "-"}
-                      </p>
-                    </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
+
+      {/* Package detail */}
+      {selectedPackage ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+            <div className={`sticky top-0 bg-gradient-to-r ${getTierTheme(selectedPackage).color} p-6 text-white sm:p-8`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="mb-1 text-2xl font-bold sm:text-3xl">{selectedPackage.name}</h2>
+                  {selectedPackage.subtitle ? (
+                    <p className="mb-3 text-white/90">{selectedPackage.subtitle}</p>
+                  ) : null}
+                  <PriceTag plan={selectedPackage.selectedPlan} size="modal" />
+                  <p className="mt-1 text-sm text-white/90">
+                    {TRIMESTER_LABELS[selectedPackage.selectedPlan?.trimester] || ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPackage(null)}
+                  aria-label="Close"
+                  className="rounded-lg p-2 transition-colors hover:bg-white/20"
+                >
+                  <X size={22} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-8 p-6 sm:p-8">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 p-4">
+                  <Clock size={22} className="text-blue-600" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm text-gray-500">Duration</p>
+                    <p className="font-semibold text-gray-800">{selectedPackage.duration || "-"}</p>
                   </div>
                 </div>
-
-                {/* Trimester pricing */}
-                {selectedPackage.plans?.length ? (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
-                      Trimester Pricing
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {selectedPackage.plans.map((plan) => (
-                        <div
-                          key={plan.trimester}
-                          className="p-4 bg-gray-50 rounded-lg"
-                        >
-                          <p className="text-sm text-gray-500">
-                            {TRIMESTER_LABELS[plan.trimester] || plan.trimester}
-                          </p>
-                          <p className="text-2xl font-bold text-gray-800">
-                            {formatPrice(plan.price)}
-                          </p>
-                          {typeof plan.originalPrice === "number" &&
-                          plan.originalPrice > 0 ? (
-                            <p className="text-sm text-gray-400 line-through">
-                              {formatPrice(plan.originalPrice)}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-xs text-gray-500">
-                            {plan.durationInDays} days access
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 p-4">
+                  <UserRound size={22} className="text-purple-600" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm text-gray-500">Ideal for</p>
+                    <p className="font-semibold text-gray-800">{selectedPackage.idealFor || "-"}</p>
                   </div>
-                ) : null}
+                </div>
+              </div>
 
-                {/* All Modules */}
-                {selectedPackage.modules?.length ? (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
-                      Course Modules ({selectedPackage.modules.length})
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {selectedPackage.modules.map((module, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="w-8 h-8 shrink-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                            {index + 1}
-                          </div>
-                          <span className="text-gray-700">{module}</span>
-                        </div>
-                      ))}
-                    </div>
+              {selectedPackage.plans?.length ? (
+                <section>
+                  <h3 className="mb-3 text-lg font-bold text-gray-800">Trimester pricing</h3>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {selectedPackage.plans.map((item) => (
+                      <div key={item.trimester} className="rounded-xl bg-gray-50 p-4">
+                        <p className="text-sm text-gray-500">
+                          {TRIMESTER_LABELS[item.trimester] || item.trimester}
+                        </p>
+                        <p className="text-2xl font-bold text-gray-800">{formatPrice(item.price)}</p>
+                        {typeof item.originalPrice === "number" && item.originalPrice > 0 ? (
+                          <p className="text-sm text-gray-400 line-through">{formatPrice(item.originalPrice)}</p>
+                        ) : null}
+                        <p className="mt-1 text-xs text-gray-500">{item.durationInDays} days access</p>
+                      </div>
+                    ))}
                   </div>
-                ) : null}
+                </section>
+              ) : null}
 
-                {/* All Includes */}
-                {selectedPackage.includes?.length ? (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
-                      What is Included
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {selectedPackage.includes.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center p-3 bg-green-50 rounded-lg"
-                        >
-                          <CheckIcon className="w-5 h-5 mr-3 text-green-600 shrink-0" />
-                          <span className="text-gray-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
+              {selectedPackage.modules?.length ? (
+                <section>
+                  <h3 className="mb-3 text-lg font-bold text-gray-800">
+                    Course modules ({selectedPackage.modules.length})
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {selectedPackage.modules.map((module, index) => (
+                      <div key={index} className="flex items-center rounded-xl bg-gray-50 p-3">
+                        <span className="mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-xs font-semibold text-white">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm text-gray-700">{module}</span>
+                      </div>
+                    ))}
                   </div>
-                ) : null}
+                </section>
+              ) : null}
 
-                {/* Premium Features for Elite */}
-                {premiumGroupsWithItems(selectedPackage.premiumFeatures)
-                  .length ? (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
-                      Premium Features
-                    </h3>
-                    <div className="space-y-4">
-                      {premiumGroupsWithItems(
-                        selectedPackage.premiumFeatures,
-                      ).map(([category, features]) => (
-                          <div
-                            key={category}
-                            className="p-4 bg-amber-50 rounded-lg"
-                          >
-                            <h4 className="font-semibold text-gray-800 mb-3 capitalize">
-                              {category.replace(/([A-Z])/g, " $1").trim()}
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {features.map((feature, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-start text-sm text-gray-700"
-                                >
-                                  <CheckIcon className="w-4 h-4 mr-2 text-amber-600 flex-shrink-0 mt-0.5" />
-                                  {feature}
-                                </div>
-                              ))}
+              {selectedPackage.includes?.length ? (
+                <section>
+                  <h3 className="mb-3 text-lg font-bold text-gray-800">What is included</h3>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {selectedPackage.includes.map((item, index) => (
+                      <div key={index} className="flex items-center rounded-xl bg-emerald-50 p-3">
+                        <Check size={18} className="mr-3 shrink-0 text-emerald-600" aria-hidden="true" />
+                        <span className="text-sm text-gray-700">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {premiumGroupsWithItems(selectedPackage.premiumFeatures).length ? (
+                <section>
+                  <h3 className="mb-3 text-lg font-bold text-gray-800">Premium features</h3>
+                  <div className="space-y-3">
+                    {premiumGroupsWithItems(selectedPackage.premiumFeatures).map(([category, features]) => (
+                      <div key={category} className="rounded-xl bg-amber-50 p-4">
+                        <h4 className="mb-2 font-semibold capitalize text-gray-800">
+                          {category.replace(/([A-Z])/g, " $1").trim()}
+                        </h4>
+                        <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                          {features.map((feature, index) => (
+                            <div key={index} className="flex items-start text-sm text-gray-700">
+                              <Check size={15} className="mr-2 mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+                              {feature}
                             </div>
-                          </div>
-                        ))}
-                    </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ) : null}
+                </section>
+              ) : null}
 
-                {/* Exclusive Benefits for Pro */}
-                {selectedPackage.exclusiveBenefits?.length ? (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
-                      Exclusive Benefits
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {selectedPackage.exclusiveBenefits.map(
-                        (benefit, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center p-3 bg-purple-50 rounded-lg"
-                          >
-                            <CheckIcon className="w-5 h-5 mr-3 text-purple-600 shrink-0" />
-                            <span className="text-gray-700">{benefit}</span>
-                          </div>
-                        ),
-                      )}
-                    </div>
+              {selectedPackage.exclusiveBenefits?.length ? (
+                <section>
+                  <h3 className="mb-3 text-lg font-bold text-gray-800">Exclusive benefits</h3>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {selectedPackage.exclusiveBenefits.map((benefit, index) => (
+                      <div key={index} className="flex items-center rounded-xl bg-purple-50 p-3">
+                        <Check size={18} className="mr-3 shrink-0 text-purple-600" aria-hidden="true" />
+                        <span className="text-sm text-gray-700">{benefit}</span>
+                      </div>
+                    ))}
                   </div>
-                ) : null}
+                </section>
+              ) : null}
 
-                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                  <button
-                    onClick={() => setSelectedPackage(null)}
-                    className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-150"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => handleEdit(selectedPackage)}
-                    className={`px-8 py-3 text-white bg-gradient-to-r ${getTierTheme(selectedPackage).color} rounded-lg hover:opacity-90 transition-opacity duration-200 font-semibold`}
-                  >
-                    Edit {selectedPackage.name}
-                  </button>
-                </div>
+              <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 pt-6">
+                <Button variant="secondary" onClick={() => setSelectedPackage(null)}>
+                  Close
+                </Button>
+                <Button variant="danger" icon={Trash2} onClick={() => setPendingDelete(selectedPackage)}>
+                  Delete
+                </Button>
+                <Button icon={Pencil} onClick={() => handleEdit(selectedPackage)}>
+                  Edit {selectedPackage.name}
+                </Button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
+
+      {/* Delete confirmation — after the detail view, so it opens on top of it */}
+      <Modal
+        open={Boolean(pendingDelete)}
+        size="sm"
+        title={`Delete ${pendingDelete?.name || "this package"}?`}
+        description="It disappears from the app straight away."
+        onClose={() => (isDeleting ? null : setPendingDelete(null))}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={isDeleting}>
+              Keep it
+            </Button>
+            <Button variant="danger" icon={Trash2} onClick={confirmDelete} loading={isDeleting}>
+              Delete package
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600">
+          Patients who already bought it keep their plan. To hide it for a while instead, edit the
+          package and switch it to inactive.
+        </p>
+      </Modal>
     </div>
   );
 };

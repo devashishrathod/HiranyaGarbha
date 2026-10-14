@@ -62,10 +62,18 @@ const API_ENDPOINTS = {
   SUBSCRIPTIONS: {
     CREATE: "/subscriptions/add",
     GET_ALL: "/subscriptions/getAll",
-    GET_PACKAGES: "/subscriptions/packages",
+    GET_PACKAGES: "/subscriptions/packages", // ?trimester=&includeInactive=true
     GET_ONE: "/subscriptions/get/:id",
     UPDATE: "/subscriptions/update/:id",
     DELETE: "/subscriptions/delete/:id",
+  },
+
+  // Admin plan history — what patients actually took (read-only).
+  // LIST and STATS take the same filters; see server/routes/adminPatientSubscriptions.js
+  PATIENT_PLANS: {
+    LIST: "/admin/patient-subscriptions",
+    STATS: "/admin/patient-subscriptions/stats",
+    GET_ONE: "/admin/patient-subscriptions/:id",
   },
 
   /*

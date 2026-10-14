@@ -74,3 +74,64 @@ export const formatPrice = (value) => {
   if (typeof value !== "number" || Number.isNaN(value)) return "-";
   return `₹${value.toLocaleString("en-IN")}`;
 };
+
+/* ------------------------------------------------------------------ */
+/* Patient plans (admin history)                                       */
+/* Mirrors server/constants.js -> SUBSCRIPTION_STATES and friends      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The state the admin listing shows — computed on the server, so a plan past
+ * its end date reads "Expired" and a stale checkout reads "Abandoned" even
+ * though nothing has updated their stored status yet.
+ */
+export const PLAN_STATE_META = {
+  ACTIVE: { label: "Active", tone: "green", hint: "Plan is running" },
+  SCHEDULED: { label: "Scheduled", tone: "blue", hint: "Starts when the current plan ends" },
+  PENDING_PAYMENT: { label: "Awaiting payment", tone: "amber", hint: "Checkout opened in the last 30 minutes" },
+  ABANDONED: { label: "Abandoned", tone: "slate", hint: "Checkout started but never paid" },
+  EXPIRED: { label: "Expired", tone: "slate", hint: "Plan period has ended" },
+  CANCELLED: { label: "Cancelled", tone: "red", hint: "Cancelled; access lasts until the end date" },
+  UPGRADED: { label: "Upgraded", tone: "purple", hint: "Replaced by a higher plan" },
+  REFUNDED: { label: "Refunded", tone: "red", hint: "Payment returned to the patient" },
+};
+
+/* Order of the status tabs on the plan history page */
+export const PLAN_STATE_TABS = [
+  "ACTIVE",
+  "PENDING_PAYMENT",
+  "ABANDONED",
+  "EXPIRED",
+  "UPGRADED",
+  "CANCELLED",
+  "REFUNDED",
+  "SCHEDULED",
+];
+
+export const PLAN_PAYMENT_STATUS_META = {
+  NOT_REQUIRED: { label: "Free", tone: "teal" },
+  PENDING: { label: "Pending", tone: "amber" },
+  PAID: { label: "Paid", tone: "green" },
+  FAILED: { label: "Failed", tone: "red" },
+  REFUNDED: { label: "Refunded", tone: "slate" },
+};
+
+/* One row per Razorpay attempt (SubscriptionPayment.status) */
+export const PAYMENT_ATTEMPT_META = {
+  CREATED: { label: "Checkout opened", tone: "amber" },
+  AUTHORIZED: { label: "Authorised", tone: "blue" },
+  CAPTURED: { label: "Paid", tone: "green" },
+  FAILED: { label: "Failed", tone: "red" },
+  REFUNDED: { label: "Refunded", tone: "slate" },
+};
+
+export const PLAN_KIND_OPTIONS = [
+  { value: "PACKAGE", label: "Package" },
+  { value: "BONUS", label: "Bonus course" },
+];
+
+export const PLAN_SOURCE_META = {
+  PATIENT: "Bought in the app",
+  ADMIN: "Given by admin",
+  SYSTEM: "Automatic (free Basic)",
+};

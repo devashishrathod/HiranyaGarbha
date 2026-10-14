@@ -49,6 +49,11 @@ const PackagesPage = lazy(() =>
     default: m.PackagesPage,
   })),
 );
+const PatientPlansPage = lazy(() =>
+  import("./pages/patientPlans/PatientPlansPage").then((m) => ({
+    default: m.PatientPlansPage,
+  })),
+);
 const NotificationsPage = lazy(() =>
   import("./pages/notifications/notificationsPage").then((m) => ({
     default: m.NotificationsPage,
@@ -323,6 +328,7 @@ const App = () => {
                   element={<DailyMotivationPage />}
                 />
                 <Route path="/packages" element={<PackagesPage />} />
+                <Route path="/patient-plans" element={<PatientPlansPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route
