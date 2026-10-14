@@ -132,6 +132,9 @@ module.exports = {
   /** An unpaid checkout is given up on after this long. */
   CHECKOUT_TIMEOUT_MINUTES: 30,
 
+  /** How often the expiry sweep moves lapsed plans to EXPIRED. */
+  SUBSCRIPTION_EXPIRY_SWEEP_MS: 60 * 60 * 1000,
+
   PRODUCT_TYPES: Object.freeze({
     GROCERY: "grocery",
     ELECTRONICS: "electronics",

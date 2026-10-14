@@ -2,6 +2,7 @@ const {
   startScheduledCampaigns,
   sweepScheduledCampaigns,
 } = require("./scheduledCampaigns");
+const { startSubscriptionJobs, sweepExpiries } = require("./subscriptions");
 
 /**
  * Background jobs, started once from index.js after the database connects.
@@ -12,6 +13,8 @@ const {
  */
 exports.startJobs = () => {
   startScheduledCampaigns();
+  startSubscriptionJobs();
 };
 
 exports.sweepScheduledCampaigns = sweepScheduledCampaigns;
+exports.sweepExpiries = sweepExpiries;

@@ -1,6 +1,7 @@
 const period = require("./period");
 const pricing = require("./pricing");
 const transitions = require("./transitions");
+const expiry = require("./expiry");
 const { nextSubscriptionNumber } = require("./subscriptionNumber");
 
 /**
@@ -13,5 +14,6 @@ module.exports = {
   ...period,
   ...pricing,
   ...transitions,
+  ...expiry,
   nextSubscriptionNumber,
 };

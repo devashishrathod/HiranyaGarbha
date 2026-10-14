@@ -432,7 +432,7 @@ Four sweeps in `jobs/subscriptions.js`, registered from the existing `startJobs(
 
 | Job | Runs | Does |
 |---|---|---|
-| `sweepExpiries` | Hourly | `ACTIVE` past `graceUntil` → `EXPIRED` |
+| `sweepExpiries` | Hourly, and once at boot | `ACTIVE` past `graceUntil` (past `endDate` when there is no grace) → `EXPIRED` — **built**, `jobs/subscriptions.js` |
 | `promoteScheduled` | Hourly | `SCHEDULED` whose predecessor ended → `ACTIVE` |
 | `timeoutPendingCheckouts` | 30 min | `PENDING_PAYMENT` older than 30 min → payment `FAILED` |
 | `sendRenewalReminders` | Daily 10:00 IST | Notify at 7 / 3 / 1 days before `endDate` |
