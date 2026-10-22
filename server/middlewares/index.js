@@ -3,6 +3,7 @@ const { generateJwtToken } = require("./generateJwtToken");
 const { verifyJwtToken } = require("./verifyJwtToken");
 const { validateRoles, isAdmin, isUser, isStaff } = require("./validateRoles");
 const { validateSchema } = require("./validateSchema");
+const { removeTempFiles, rejectOversizedFiles } = require("./uploads");
 
 module.exports = {
   errorHandler,
@@ -13,4 +14,6 @@ module.exports = {
   isUser,
   isStaff,
   validateSchema,
+  removeTempFiles,
+  rejectOversizedFiles,
 };

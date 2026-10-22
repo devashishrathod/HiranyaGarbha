@@ -5,8 +5,13 @@ const morgan = require("morgan");
 const fileUpload = require("express-fileupload");
 
 const { mongoDb } = require("./database/mongoDb");
-const { errorHandler } = require("./middlewares");
+const {
+  errorHandler,
+  removeTempFiles,
+  rejectOversizedFiles,
+} = require("./middlewares");
 const { throwError } = require("./utils");
+const { MAX_UPLOAD_BYTES } = require("./constants");
 const allRoutes = require("./routes");
 const { router: webhookRoutes } = require("./routes/webhooks");
 const { startJobs } = require("./jobs");
@@ -14,7 +19,20 @@ const { startJobs } = require("./jobs");
 const app = express();
 const port = process.env.PORT || 8080;
 
-app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
+// First, so errors raised while an upload is parsed still carry CORS headers
+// — without them the browser hides the real error behind a CORS failure.
+app.use(cors());
+app.use(removeTempFiles);
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    // busboy flags a file as truncated on reaching the limit, so a file of
+    // exactly MAX_UPLOAD_BYTES needs one byte of room to get through.
+    limits: { fileSize: MAX_UPLOAD_BYTES + 1 },
+  }),
+);
+app.use(rejectOversizedFiles);
 
 /*
  * ⚠️ Webhooks mount BEFORE express.json().
@@ -27,7 +45,6 @@ app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
 app.use("/hiranyagarbha/webhooks", webhookRoutes);
 
 app.use(express.json());
-app.use(cors());
 app.use(morgan("dev"));
 app.use("/hiranyagarbha/", allRoutes);
 app.get("/", async (req, res) => {

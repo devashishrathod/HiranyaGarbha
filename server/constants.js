@@ -328,6 +328,14 @@ module.exports = {
   // stop fitting on the chart and the aggregations scan most of the history.
   DASHBOARD_MAX_CUSTOM_DAYS: 731,
 
+  /**
+   * Largest single file any upload accepts — Cloudinary's plain upload API
+   * refuses anything bigger. nginx (client_max_body_size 200M) must stay above
+   * this plus the rest of the form, or it answers 413 itself without CORS
+   * headers and the browser reports a CORS failure instead.
+   */
+  MAX_UPLOAD_BYTES: 100 * 1024 * 1024,
+
   /** Profile photos: what an upload may be before it is sent to Cloudinary. */
   PROFILE_IMAGE: Object.freeze({
     MAX_BYTES: 5 * 1024 * 1024,
