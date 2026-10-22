@@ -2,13 +2,19 @@ const express = require("express");
 const router = express.Router();
 
 const appointmentController = require("../controllers/appointments");
-const { validateSchema, verifyJwtToken } = require("../middlewares");
+const { ROLES } = require("../constants");
+const {
+  validateSchema,
+  validateRoles,
+  verifyJwtToken,
+} = require("../middlewares");
 
 const {
   createAppointmentSchema,
   cancelAppointmentSchema,
   rescheduleAppointmentSchema,
   completeAppointmentSchema,
+  updatePaymentStatusSchema,
 } = require("../validator/appointments");
 
 // Create
@@ -70,6 +76,14 @@ router.patch(
   "/:appointmentId/no-show",
   verifyJwtToken,
   appointmentController.noShow,
+);
+
+// Payment Status (manual - patients can't mark their own appointment paid)
+router.patch(
+  "/:appointmentId/payment-status",
+  validateRoles(ROLES.ADMIN, ROLES.STAFF, ROLES.DOCTOR),
+  validateSchema(updatePaymentStatusSchema),
+  appointmentController.paymentStatus,
 );
 
 // Doctor

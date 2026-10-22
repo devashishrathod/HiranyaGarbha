@@ -57,6 +57,11 @@ const completeAppointmentSchema = Joi.object({
   prescription: objectId.allow(null, ""),
 });
 
+// Manual (counter / cash / UPI) payment only - FAILED and REFUNDED belong to a gateway flow
+const updatePaymentStatusSchema = Joi.object({
+  paymentStatus: Joi.string().valid("PENDING", "PAID").required(),
+});
+
 const appointmentIdSchema = Joi.object({
   appointmentId: objectId.required(),
 });
@@ -141,6 +146,7 @@ module.exports = {
   cancelAppointmentSchema,
   rescheduleAppointmentSchema,
   completeAppointmentSchema,
+  updatePaymentStatusSchema,
   appointmentIdSchema,
   doctorAppointmentQuerySchema,
   patientAppointmentQuerySchema,

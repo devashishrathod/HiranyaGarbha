@@ -1257,6 +1257,40 @@
           "response": []
         },
         {
+          "name": "updatePaymentStatus",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"paymentStatus\": \"PAID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}appointments/68f0a1b2c3d4e5f6a7b8c9d3/payment-status",
+              "host": [
+                "{{Hiranya-baseUrl}}appointments"
+              ],
+              "path": [
+                "68f0a1b2c3d4e5f6a7b8c9d3",
+                "payment-status"
+              ]
+            },
+            "description": "Manual payment (counter / cash / UPI). Admin, staff or doctor only. paymentStatus: PAID or PENDING (PENDING undoes a wrong PAID). PAID is rejected for CANCELLED / NO_SHOW appointments. Appointment status changes never touch paymentStatus."
+          },
+          "response": []
+        },
+        {
           "name": "getDoctorAppointments",
           "request": {
             "method": "GET",

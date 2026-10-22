@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+const { throwError } = require("../../utils");
 const AppointmentRepository = require("../../helpers/appointments/new");
 const DoctorRepository = require("../../helpers/doctors/repo");
 const PatientRepository = require("../../helpers/doctors/patient");
@@ -484,6 +485,44 @@ class AppointmentService {
     return AppointmentRepository.updateById(appointmentId, {
       status: "NO_SHOW",
     });
+  }
+
+  /**
+   * Manually mark payment PAID / back to PENDING (counter, cash, UPI).
+   * Independent of the appointment status flow - completing or cancelling
+   * never touches paymentStatus.
+   */
+  async updatePaymentStatus(appointmentId, paymentStatus) {
+    if (!["PENDING", "PAID"].includes(paymentStatus)) {
+      throwError(400, "Payment status can only be PENDING or PAID");
+    }
+
+    const appointment = await this.getAppointmentById(appointmentId);
+
+    // FAILED / REFUNDED come from a gateway, not from the counter
+    if (!["PENDING", "PAID"].includes(appointment.paymentStatus)) {
+      throwError(
+        400,
+        `Payment status ${appointment.paymentStatus} cannot be changed manually`,
+      );
+    }
+
+    if (appointment.paymentStatus === paymentStatus) {
+      throwError(400, `Payment is already ${paymentStatus}`);
+    }
+
+    // No refund flow - money can't be taken for a visit that never happened
+    if (
+      paymentStatus === "PAID" &&
+      ["CANCELLED", "NO_SHOW"].includes(appointment.status)
+    ) {
+      throwError(
+        400,
+        `Payment cannot be marked PAID for a ${appointment.status} appointment`,
+      );
+    }
+
+    return AppointmentRepository.updateById(appointmentId, { paymentStatus });
   }
 
   /**

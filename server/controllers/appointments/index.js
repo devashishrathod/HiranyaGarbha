@@ -211,6 +211,24 @@ class AppointmentController {
     }
   }
 
+  // Update Payment Status
+  async paymentStatus(req, res, next) {
+    try {
+      const appointment = await appointmentService.updatePaymentStatus(
+        req.params.appointmentId,
+        req.body.paymentStatus,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Payment marked as ${appointment.paymentStatus}`,
+        data: appointment,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Doctor Appointments
   async doctorAppointments(req, res, next) {
     try {
