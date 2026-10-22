@@ -1,6 +1,9 @@
 const Subscription = require("../../models/Subscription");
 const { SUBSCRIPTION_TIERS } = require("../../constants");
-const { pickPlanForTrimester } = require("../../helpers/subscriptions");
+const {
+  pickPlanForTrimester,
+  normalizeModules,
+} = require("../../helpers/subscriptions");
 
 /*
  * Feed for the packages screen: every live package with the one plan that
@@ -21,6 +24,8 @@ exports.getPackages = async (query = {}) => {
 
   const withPlan = records.map((record) => ({
     ...record,
+    // lean() skips the model's legacy-string conversion
+    modules: normalizeModules(record.modules) || [],
     selectedPlan: pickPlanForTrimester(record.plans, trimester),
   }));
 

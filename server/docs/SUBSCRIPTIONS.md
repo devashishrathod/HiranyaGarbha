@@ -73,6 +73,7 @@ The same rule as `helpers/push/` in [NOTIFICATIONS.md](./NOTIFICATIONS.md) §2, 
   trimester:  "all" | "first" | "second" | "third",
   snapshot: { name, subtitle, price, originalPrice,
               durationInDays, modules[], includes[] },
+              // modules: [{ title, description?, videoUrl? }], same as the package
 
   // ---- period ----
   startDate:  Date,
@@ -111,6 +112,8 @@ The same rule as `helpers/push/` in [NOTIFICATIONS.md](./NOTIFICATIONS.md) §2, 
 ```
 
 **Why `snapshot`.** Prices change. A patient who paid ₹9,999 must keep seeing ₹9,999 and the module list as sold. Live-joining `packageId` would silently rewrite history; `packageId` stays for grouping and reporting.
+
+**Course modules.** Each module on a package (and in the snapshot) is `{ title, description?, videoUrl? }`. Description (≤ 300 chars) and video are optional; the video can be any http(s) link, and the admin panel plays YouTube links inline. Modules were plain strings before — the API still accepts a string as a title-only module, and `npm run migrate:module-objects` converts stored strings. ⚠️ The mobile app reads `module.title` now, not `module`.
 
 **Why `userId` is duplicated.** Every entitlement check starts from a JWT. Storing both removes a `Patient` lookup from the hottest path in the app.
 

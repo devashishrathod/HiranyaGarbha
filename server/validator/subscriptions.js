@@ -4,6 +4,13 @@ const {
   SUBSCRIPTION_TIERS,
   PLAN_TRIMESTERS,
 } = require("../constants");
+const {
+  MODULE_TITLE_MAX,
+  MODULE_DESCRIPTION_MAX,
+  MODULE_VIDEO_URL_MAX,
+  MODULES_MAX,
+  isValidVideoLink,
+} = require("../helpers/subscriptions");
 
 const planSchema = Joi.object({
   trimester: Joi.string()
@@ -22,6 +29,52 @@ const planSchema = Joi.object({
 
 const stringList = (max = 60) =>
   Joi.array().items(Joi.string().trim().max(200)).max(max);
+
+const moduleTitle = Joi.string()
+  .trim()
+  .max(MODULE_TITLE_MAX)
+  .messages({
+    "string.empty": "Every module needs a title",
+    "string.max": "Module title cannot exceed {#limit} characters",
+  });
+
+const moduleObject = Joi.object({
+  title: moduleTitle.required().messages({
+    "any.required": "Every module needs a title",
+  }),
+  description: Joi.string()
+    .trim()
+    .max(MODULE_DESCRIPTION_MAX)
+    .allow("", null)
+    .optional()
+    .messages({
+      "string.max": "Module description cannot exceed {#limit} characters",
+    }),
+  videoUrl: Joi.string()
+    .trim()
+    .max(MODULE_VIDEO_URL_MAX)
+    .allow("", null)
+    .optional()
+    .custom((value, helpers) =>
+      isValidVideoLink(value) ? value : helpers.error("any.invalid")
+    )
+    .messages({
+      "any.invalid": "Module video must be a valid link",
+      "string.max": "Module video link cannot exceed {#limit} characters",
+    }),
+});
+
+// A plain string is still accepted as a module title, so clients written
+// before modules had details keep working.
+const modulesList = Joi.array()
+  .items(
+    Joi.alternatives().conditional(Joi.string(), {
+      then: moduleTitle,
+      otherwise: moduleObject,
+    })
+  )
+  .max(MODULES_MAX)
+  .messages({ "array.max": "A package can have at most {#limit} modules" });
 
 const premiumFeaturesSchema = Joi.object({
   medicalCare: stringList().optional(),
@@ -49,7 +102,7 @@ const packageFields = {
   isPopular: Joi.boolean().optional(),
   isFree: Joi.boolean().optional(),
   displayOrder: Joi.number().integer().min(0).optional(),
-  modules: stringList().optional(),
+  modules: modulesList.optional(),
   includes: stringList().optional(),
   exclusiveBenefits: stringList().optional(),
   premiumFeatures: premiumFeaturesSchema.optional(),

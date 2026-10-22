@@ -7,6 +7,17 @@ const {
   SUBSCRIPTION_SOURCE,
   SUBSCRIPTION_KIND,
 } = require("../constants");
+const { normalizeModules } = require("../helpers/subscriptions/modules");
+
+// Same shape as Subscription's modules
+const moduleSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    videoUrl: { type: String, trim: true },
+  },
+  { _id: false }
+);
 
 /*
  * What the patient actually bought, copied at purchase time.
@@ -23,7 +34,7 @@ const snapshotSchema = new mongoose.Schema(
     price: { type: Number, min: 0 },
     originalPrice: { type: Number, min: 0 },
     durationInDays: { type: Number, min: 0 },
-    modules: { type: [String], default: [] },
+    modules: { type: [moduleSchema], default: [], set: normalizeModules },
     includes: { type: [String], default: [] },
   },
   { _id: false }
@@ -157,6 +168,12 @@ const patientSubscriptionSchema = new mongoose.Schema(
   },
   { timestamps: true, versionKey: false }
 );
+
+// Snapshots taken while modules were strings — see Subscription.js
+patientSubscriptionSchema.pre("init", function (raw) {
+  const modules = raw?.snapshot?.modules;
+  if (Array.isArray(modules)) raw.snapshot.modules = normalizeModules(modules);
+});
 
 patientSubscriptionSchema.index({ patientId: 1, status: 1, endDate: -1 });
 patientSubscriptionSchema.index({ status: 1, endDate: 1 });

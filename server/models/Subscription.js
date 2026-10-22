@@ -4,6 +4,20 @@ const {
   SUBSCRIPTION_TIERS,
   PLAN_TRIMESTERS,
 } = require("../constants");
+const { normalizeModules } = require("../helpers/subscriptions/modules");
+
+/*
+ * One point in the course. Description and video are optional; the video can
+ * be any link, YouTube ones play inline in the panel.
+ */
+const moduleSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    videoUrl: { type: String, trim: true },
+  },
+  { _id: false }
+);
 
 /*
  * One price point of a package. A package carries one plan per trimester the
@@ -61,7 +75,8 @@ const subscriptionSchema = new mongoose.Schema(
     displayOrder: { type: Number, default: 0 },
 
     // Content
-    modules: { type: [String], default: [] },
+    // Legacy string modules are turned into { title } on the way in
+    modules: { type: [moduleSchema], default: [], set: normalizeModules },
     includes: { type: [String], default: [] },
     exclusiveBenefits: { type: [String], default: [] },
     premiumFeatures: { type: premiumFeaturesSchema, default: undefined },
@@ -86,6 +101,16 @@ const subscriptionSchema = new mongoose.Schema(
   },
   { timestamps: true, versionKey: false }
 );
+
+/*
+ * ⚠️ Records saved before modules became objects still hold strings, and
+ * Mongoose drops the whole array when it meets one. Converting before init
+ * keeps them readable (and an edit-and-save from wiping them) until
+ * `npm run migrate:module-objects` has run.
+ */
+subscriptionSchema.pre("init", function (raw) {
+  if (Array.isArray(raw?.modules)) raw.modules = normalizeModules(raw.modules);
+});
 
 subscriptionSchema.index({ tier: 1, isDeleted: 1 });
 subscriptionSchema.index({ displayOrder: 1 });

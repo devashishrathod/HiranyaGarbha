@@ -7,7 +7,10 @@ const {
   SUBSCRIPTION_KIND,
 } = require("../../constants");
 const { throwError, validateObjectId } = require("../../utils");
-const { pickPlanForTrimester } = require("../../helpers/subscriptions");
+const {
+  pickPlanForTrimester,
+  normalizeModules,
+} = require("../../helpers/subscriptions");
 const { quote } = require("../../helpers/patientSubscriptions");
 
 /**
@@ -87,7 +90,7 @@ exports.resolvePurchase = async ({ patientId, packageId, trimester }) => {
       price: plan.price,
       originalPrice: plan.originalPrice,
       durationInDays: plan.durationInDays,
-      modules: pkg.modules || [],
+      modules: normalizeModules(pkg.modules) || [],
       includes: pkg.includes || [],
     },
   };

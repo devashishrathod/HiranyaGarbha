@@ -1,1 +1,1 @@
-module.exports = { ...require("./plans") };
+module.exports = { ...require("./plans"), ...require("./modules") };
