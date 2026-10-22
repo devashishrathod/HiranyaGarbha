@@ -4,16 +4,22 @@ import { Eye, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
+import CharCount from "../../components/UI/CharCount";
+import LinkifiedText from "../../components/UI/LinkifiedText";
 import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
+import Toggle from "../../components/UI/Toggle";
 
 import {
+  getApiErrorMessage,
   useDeleteMutation,
   useGetQuery,
   usePostMutation,
 } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import axiosInstance from "../../api/axiosInstance";
+import { GALLERY_LIMITS } from "../../constants/gallery";
+import { UPLOAD_LIMIT } from "../../constants/upload";
 import formatGrammer from "../../utils/formatGrammer";
 
 const getApiMessage = (res, fallback) => {
@@ -134,6 +140,7 @@ const BannerAddEditModal = ({
   subCategories,
   onSubmit,
   isSubmitting,
+  uploadProgress,
 }) => {
   const fileRefImage = useRef(null);
   const fileRefVideo = useRef(null);
@@ -202,6 +209,13 @@ const BannerAddEditModal = ({
 
   const onFile = (key) => (e) => {
     const file = e.target.files?.[0] || null;
+    // Caught here rather than after minutes of uploading a file the server
+    // would refuse anyway. Whatever was picked before stays selected.
+    if (file && file.size > UPLOAD_LIMIT.MAX_BYTES) {
+      toast.error(`The ${key} must be ${UPLOAD_LIMIT.LABEL} or smaller`);
+      e.target.value = "";
+      return;
+    }
     setForm((prev) => ({ ...prev, [key]: file }));
     if (file) clearRemoveFlagOnNewUpload(key);
   };
@@ -229,15 +243,31 @@ const BannerAddEditModal = ({
     setRemoveExisting((prev) => ({ ...prev, [key]: false }));
   };
 
+  const formProblem = () => {
+    const name = form.name.trim();
+    const { NAME_MIN, NAME_MAX, DESCRIPTION_MAX } = GALLERY_LIMITS;
+
+    if (!name) return "Name is required";
+    if (name.length < NAME_MIN) {
+      return `Name must be at least ${NAME_MIN} characters`;
+    }
+    // The inputs stop typing at the limit, but an older item can be over it.
+    if (name.length > NAME_MAX) {
+      return `Name cannot exceed ${NAME_MAX} characters`;
+    }
+    if ((form.description || "").trim().length > DESCRIPTION_MAX) {
+      return `Description cannot exceed ${DESCRIPTION_MAX} characters`;
+    }
+    if (!form.subCategoryId) return "Subcategory is required";
+    return "";
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-    if (!form.subCategoryId) {
-      toast.error("Subcategory is required");
+    const problem = formProblem();
+    if (problem) {
+      toast.error(problem);
       return;
     }
 
@@ -255,6 +285,14 @@ const BannerAddEditModal = ({
     }
 
     onSubmit(fd);
+  };
+
+  const submitLabel = () => {
+    if (!isSubmitting) return mode === "edit" ? "Update" : "Create";
+    if (uploadProgress > 0 && uploadProgress < 100) {
+      return `Uploading ${uploadProgress}%`;
+    }
+    return mode === "edit" ? "Updating..." : "Adding...";
   };
 
   return (
@@ -281,12 +319,19 @@ const BannerAddEditModal = ({
         <form onSubmit={handleSubmit} className="mt-5 grid grid-cols-1 gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Name
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Name
+                </label>
+                <CharCount
+                  length={form.name.length}
+                  max={GALLERY_LIMITS.NAME_MAX}
+                />
+              </div>
               <input
                 value={form.name}
                 onChange={onChange("name")}
+                maxLength={GALLERY_LIMITS.NAME_MAX}
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
                 placeholder="Enter name"
                 disabled={isSubmitting}
@@ -314,15 +359,22 @@ const BannerAddEditModal = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Description
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Description
+              </label>
+              <CharCount
+                length={(form.description || "").length}
+                max={GALLERY_LIMITS.DESCRIPTION_MAX}
+              />
+            </div>
             <textarea
               value={form.description}
               onChange={onChange("description")}
+              maxLength={GALLERY_LIMITS.DESCRIPTION_MAX}
               rows={3}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
-              placeholder="Enter description"
+              placeholder="Enter description. Links like https://youtu.be/... become clickable."
               disabled={isSubmitting}
             />
           </div>
@@ -341,6 +393,7 @@ const BannerAddEditModal = ({
                   className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                   disabled={isSubmitting}
                 />
+                <p className="text-xs text-slate-500">{UPLOAD_LIMIT.HINT}</p>
                 {imagePreview ? (
                   <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
                     <img
@@ -381,6 +434,7 @@ const BannerAddEditModal = ({
                   className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                   disabled={isSubmitting}
                 />
+                <p className="text-xs text-slate-500">{UPLOAD_LIMIT.HINT}</p>
                 {videoPreview ? (
                   <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
                     <video
@@ -429,6 +483,24 @@ const BannerAddEditModal = ({
             </label>
           </div>
 
+          {isSubmitting && uploadProgress > 0 ? (
+            <div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-2 rounded-full bg-blue-600 transition-all duration-200"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              {/* The server only answers once Cloudinary has the file, so a
+                  video can sit at 100% for a while. */}
+              <p className="mt-1 text-center text-xs text-slate-600">
+                {uploadProgress < 100
+                  ? `Uploading... ${uploadProgress}%`
+                  : "Upload complete. Saving the media, this can take a minute..."}
+              </p>
+            </div>
+          ) : null}
+
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
@@ -443,37 +515,12 @@ const BannerAddEditModal = ({
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
               disabled={isSubmitting}
             >
-              {isSubmitting
-                ? mode === "edit"
-                  ? "Updating..."
-                  : "Adding..."
-                : mode === "edit"
-                  ? "Update"
-                  : "Create"}
+              {submitLabel()}
             </button>
           </div>
         </form>
       </div>
     </div>
-  );
-};
-
-const Toggle = ({ checked, onChange, disabled }) => {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? "bg-emerald-500" : "bg-slate-300"
-      } ${disabled ? "opacity-60" : ""}`}
-    >
-      <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-          checked ? "translate-x-5" : "translate-x-1"
-        }`}
-      />
-    </button>
   );
 };
 
@@ -627,8 +674,20 @@ export const GalleryPage = () => {
     }));
   }, [bannersData]);
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const trackUploadProgress = (event) => {
+    if (event.total) {
+      setUploadProgress(Math.round((event.loaded / event.total) * 100));
+    }
+  };
+
   const { mutate: createBanner, isPending: isCreating } = usePostMutation(
     API_ENDPOINTS.BANNERS.CREATE,
+    {
+      onUploadProgress: trackUploadProgress,
+      onSettled: () => setUploadProgress(0),
+    },
   );
 
   const { mutate: deleteBanner, isPending: isDeleting } = useDeleteMutation(
@@ -638,9 +697,13 @@ export const GalleryPage = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       const endpoint = API_ENDPOINTS.BANNERS.UPDATE.replace(":id", id);
-      const res = await axiosInstance.put(endpoint, data);
+      const res = await axiosInstance.put(endpoint, data, {
+        onUploadProgress: trackUploadProgress,
+      });
       return res.data;
     },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+    onSettled: () => setUploadProgress(0),
   });
 
   const handleOpenCreate = () => {
@@ -1198,7 +1261,11 @@ export const GalleryPage = () => {
                     style={getDescriptionStyle()}
                     title={row.description || ""}
                   >
-                    {row.description || "-"}
+                    {row.description ? (
+                      <LinkifiedText text={row.description} />
+                    ) : (
+                      "-"
+                    )}
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
@@ -1275,6 +1342,7 @@ export const GalleryPage = () => {
           editModal.mode === "edit" ? handleSubmitEdit : handleSubmitCreate
         }
         isSubmitting={mutationBusy}
+        uploadProgress={uploadProgress}
       />
     </div>
   );

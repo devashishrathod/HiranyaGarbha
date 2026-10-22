@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import LinkifiedText from "../../components/UI/LinkifiedText";
 import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
 import { useGetQuery } from "../../api/apiCall";
@@ -173,7 +174,11 @@ export const GalleryDetails = () => {
                 Description
               </div>
               <div className="mt-0.5 whitespace-pre-wrap text-slate-800">
-                {formatGrammer(banner.description || "-")}
+                {banner.description ? (
+                  <LinkifiedText text={formatGrammer(banner.description)} />
+                ) : (
+                  "-"
+                )}
               </div>
             </div>
 
