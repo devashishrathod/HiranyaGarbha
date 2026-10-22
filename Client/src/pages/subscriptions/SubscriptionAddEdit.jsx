@@ -9,6 +9,11 @@ import {
 } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import Loader from "../../components/UI/Loader";
+import ModulesEditor from "../../components/subscriptions/ModulesEditor";
+import {
+  fromModuleRows,
+  toModuleRows,
+} from "../../components/subscriptions/moduleRows";
 import {
   PLAN_TRIMESTERS,
   SUBSCRIPTION_TIERS,
@@ -72,7 +77,7 @@ const initialState = {
   isPopular: false,
   isFree: false,
   isActive: true,
-  modules: "",
+  modules: [],
   includes: "",
   exclusiveBenefits: "",
   premiumFeatures: emptyPremiumFeatures(),
@@ -124,7 +129,7 @@ export const SubscriptionAddEdit = () => {
       isPopular: !!item.isPopular,
       isFree: !!item.isFree,
       isActive: typeof item.isActive === "boolean" ? item.isActive : true,
-      modules: toLines(item.modules),
+      modules: toModuleRows(item.modules),
       includes: toLines(item.includes),
       exclusiveBenefits: toLines(item.exclusiveBenefits),
       premiumFeatures: PREMIUM_GROUPS.reduce(
@@ -244,6 +249,12 @@ export const SubscriptionAddEdit = () => {
       return null;
     }
 
+    const { modules, error: modulesError } = fromModuleRows(formData.modules);
+    if (modulesError) {
+      toast.error(modulesError);
+      return null;
+    }
+
     return {
       name: formData.name.trim(),
       tier: formData.tier,
@@ -256,7 +267,7 @@ export const SubscriptionAddEdit = () => {
       isPopular: !!formData.isPopular,
       isFree: !!formData.isFree,
       isActive: !!formData.isActive,
-      modules: fromLines(formData.modules),
+      modules,
       includes: fromLines(formData.includes),
       exclusiveBenefits: fromLines(formData.exclusiveBenefits),
       premiumFeatures: PREMIUM_GROUPS.reduce(
@@ -631,21 +642,25 @@ export const SubscriptionAddEdit = () => {
           {/* ---------------- Content ---------------- */}
           <section className="space-y-4">
             <h3 className="font-semibold text-gray-800">Content</h3>
-            <p className="text-sm text-gray-500">One item per line.</p>
 
             <div className="flex flex-col">
-              <label className="mb-2 font-medium text-gray-700">
-                Course Modules
+              <label className="font-medium text-gray-700">
+                Course Modules ({formData.modules.length})
               </label>
-              <textarea
-                value={formData.modules}
-                onChange={(e) => setField("modules", e.target.value)}
-                className={`${fieldClass} resize-vertical font-mono text-sm`}
-                rows="8"
-                placeholder={"Trimester-wise Masterclasses\nAdvanced Pregnancy Yoga"}
+              <p className="mb-3 text-sm text-gray-500">
+                Each module can have a short description and a video link, both
+                optional. Press Enter in a title to add the next module.
+              </p>
+              <ModulesEditor
+                rows={formData.modules}
+                onChange={(rows) => setField("modules", rows)}
                 disabled={isLoading}
               />
             </div>
+
+            <p className="text-sm text-gray-500">
+              Includes and benefits: one item per line.
+            </p>
 
             <div className="flex flex-col">
               <label className="mb-2 font-medium text-gray-700">Includes</label>

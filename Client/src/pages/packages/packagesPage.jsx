@@ -18,6 +18,10 @@ import { useDeleteMutation, useGetQuery } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import { Button, EmptyState, Modal, PageHeader } from "../../components/UI/kit";
 import {
+  CourseModuleList,
+  ModuleHoverList,
+} from "../../components/subscriptions/CourseModules";
+import {
   PLAN_TRIMESTERS,
   TRIMESTER_LABELS,
   TRIMESTER_TABS,
@@ -76,6 +80,9 @@ const CheckList = ({ items, limit, tone, moreLabel }) => (
  * content, then the actions pinned to the bottom — so a long package does not
  * stretch the row and leave its neighbours with a gap above their buttons.
  * The full lists live in the detail view.
+ *
+ * No overflow-hidden on the card (the header rounds its own corners): a
+ * module's hover card has to be able to hang past the bottom edge.
  */
 const PackageCard = ({ pkg, trimester, onView, onEdit, onDelete }) => {
   const theme = getTierTheme(pkg);
@@ -88,11 +95,11 @@ const PackageCard = ({ pkg, trimester, onView, onEdit, onDelete }) => {
 
   return (
     <article
-      className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${
+      className={`flex h-full flex-col rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${
         pkg.isPopular ? "border-purple-300 ring-2 ring-purple-500/50" : "border-gray-200/80"
       } ${pkg.isActive ? "" : "opacity-75"}`}
     >
-      <header className={`bg-gradient-to-r ${theme.color} px-5 py-5 text-white`}>
+      <header className={`rounded-t-2xl bg-gradient-to-r ${theme.color} px-5 py-5 text-white`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold">{pkg.name}</h2>
@@ -142,7 +149,7 @@ const PackageCard = ({ pkg, trimester, onView, onEdit, onDelete }) => {
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
               Course modules · {pkg.modules.length}
             </h3>
-            <CheckList items={pkg.modules} limit={MODULES_ON_CARD} tone="text-emerald-500" moreLabel="modules" />
+            <ModuleHoverList modules={pkg.modules} limit={MODULES_ON_CARD} />
           </section>
         ) : null}
 
@@ -486,16 +493,7 @@ const PackagesPage = () => {
                   <h3 className="mb-3 text-lg font-bold text-gray-800">
                     Course modules ({selectedPackage.modules.length})
                   </h3>
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    {selectedPackage.modules.map((module, index) => (
-                      <div key={index} className="flex items-center rounded-xl bg-gray-50 p-3">
-                        <span className="mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-xs font-semibold text-white">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm text-gray-700">{module}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <CourseModuleList modules={selectedPackage.modules} columns={2} />
                 </section>
               ) : null}
 

@@ -76,6 +76,51 @@ export const formatPrice = (value) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Course modules                                                      */
+/* Mirrors server/helpers/subscriptions/modules.js                     */
+/* ------------------------------------------------------------------ */
+
+export const MODULE_TITLE_MAX = 200;
+export const MODULE_DESCRIPTION_MAX = 300;
+export const MODULE_VIDEO_URL_MAX = 500;
+export const MODULES_MAX = 60;
+
+const HAS_SCHEME = /^https?:\/\//i;
+
+/** "youtu.be/..." without a scheme becomes an absolute https link */
+export const withScheme = (link) =>
+  HAS_SCHEME.test(link) ? link : `https://${link}`;
+
+/** Any http(s) link with a real host; YouTube plays inline, the rest open */
+export const isValidVideoLink = (link) => {
+  const raw = typeof link === "string" ? link.trim() : "";
+  if (!raw) return false;
+
+  try {
+    const url = new URL(withScheme(raw));
+    return /^https?:$/.test(url.protocol) && url.hostname.includes(".");
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Modules are { title, description?, videoUrl? }. A record saved before they
+ * had details can still hold plain strings, so screens read them through here.
+ */
+export const toModuleList = (modules) =>
+  (Array.isArray(modules) ? modules : [])
+    .map((item) => {
+      const module = typeof item === "string" ? { title: item } : item || {};
+      return {
+        title: module.title || "",
+        description: module.description || "",
+        videoUrl: module.videoUrl || "",
+      };
+    })
+    .filter((item) => item.title.trim());
+
+/* ------------------------------------------------------------------ */
 /* Patient plans (admin history)                                       */
 /* Mirrors server/constants.js -> SUBSCRIPTION_STATES and friends      */
 /* ------------------------------------------------------------------ */

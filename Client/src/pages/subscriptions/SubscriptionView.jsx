@@ -1,6 +1,7 @@
 import API_ENDPOINTS from "../../api/apiEndpoint";
 import { useGetQuery } from "../../api/apiCall";
 import Loader from "../../components/UI/Loader";
+import { CourseModuleList } from "../../components/subscriptions/CourseModules";
 import formatGrammer from "../../utils/formatGrammer";
 import { TRIMESTER_LABELS, formatPrice } from "../../constants/subscription";
 
@@ -130,7 +131,7 @@ export const SubscriptionView = ({ subscriptionId, onClose }) => {
             </Field>
 
             <Field label={`Course Modules (${item.modules?.length || 0})`}>
-              <BulletList items={item.modules} />
+              <CourseModuleList modules={item.modules} />
             </Field>
 
             <Field label={`Includes (${item.includes?.length || 0})`}>
