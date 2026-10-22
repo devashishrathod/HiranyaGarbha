@@ -166,6 +166,7 @@ const API_ENDPOINTS = {
     START: "/appointments/:appointmentId/start",
     COMPLETE: "/appointments/:appointmentId/complete",
     NO_SHOW: "/appointments/:appointmentId/no-show",
+    PAYMENT_STATUS: "/appointments/:appointmentId/payment-status", // body: { paymentStatus: "PAID" | "PENDING" }
     BY_DOCTOR: "/appointments/doctor/:doctorId",
     DOCTOR_TODAY: "/appointments/doctor/:doctorId/today",
     BY_PATIENT: "/appointments/patient/:patientId",

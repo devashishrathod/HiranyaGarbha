@@ -139,3 +139,23 @@ export const getAvailableActions = (appointment) => {
 
   return actions;
 };
+
+/**
+ * Manual (counter) payment toggle - mirrors updatePaymentStatus in
+ * services/appointments/index.js. Returns the paymentStatus to switch to,
+ * or null when the backend would refuse. Keep both sides in sync.
+ */
+export const getPaymentToggle = (appointment) => {
+  const { status, paymentStatus } = appointment || {};
+
+  // Undo a wrong PAID - allowed whatever the appointment status
+  if (paymentStatus === "PAID") return "PENDING";
+
+  // No refund flow, so a visit that never happened can't be marked paid.
+  // FAILED / REFUNDED belong to a gateway and are never changed by hand.
+  if (paymentStatus === "PENDING" && !["CANCELLED", "NO_SHOW"].includes(status)) {
+    return "PAID";
+  }
+
+  return null;
+};

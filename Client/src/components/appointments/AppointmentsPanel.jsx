@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, IndianRupee } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 import { useApiMutation, useGetQuery } from "../../api/apiCall";
@@ -14,16 +14,19 @@ import {
   SkeletonRows,
 } from "../UI/kit";
 import {
+  getPaymentToggle,
   PAYMENT_STATUS_META,
   STATUS_META,
   STATUS_OPTIONS,
 } from "../../constants/appointment";
 import { buildQuery, nameOf, withPath } from "../../utils/ids";
 import { formatTimeRange, relativeDay } from "../../utils/datetime";
+import { formatINR } from "../dashboard/format";
 import AppointmentRowActions from "./AppointmentRowActions";
 import {
   CancelAppointmentModal,
   CompleteAppointmentModal,
+  PaymentStatusModal,
   RescheduleAppointmentModal,
 } from "./AppointmentDialogs";
 
@@ -157,6 +160,7 @@ const AppointmentsPanel = ({
               {showDoctor ? <th className="px-5 py-3">Doctor</th> : null}
               <th className="px-5 py-3">Schedule</th>
               <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Payment</th>
               <th className="px-5 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -165,6 +169,8 @@ const AppointmentsPanel = ({
               const statusMeta =
                 STATUS_META[appointment.status] || STATUS_META.PENDING;
               const paymentMeta = PAYMENT_STATUS_META[appointment.paymentStatus];
+              const paymentToggle = getPaymentToggle(appointment);
+              const fee = appointment.consultationFee;
               const patient = appointment.patientId;
               const doctor = appointment.doctorId;
 
@@ -240,10 +246,49 @@ const AppointmentsPanel = ({
                   </td>
 
                   <td className="px-5 py-4 align-top">
+                    <Pill tone={statusMeta.tone}>{statusMeta.label}</Pill>
+                  </td>
+
+                  <td className="px-5 py-4 align-top">
                     <div className="flex flex-col items-start gap-1.5">
-                      <Pill tone={statusMeta.tone}>{statusMeta.label}</Pill>
+                      <p className="font-medium text-gray-900">
+                        {fee === undefined || fee === null ? "—" : formatINR(fee)}
+                      </p>
                       {paymentMeta ? (
                         <Pill tone={paymentMeta.tone}>{paymentMeta.label}</Pill>
+                      ) : null}
+                      {paymentToggle === "PAID" ? (
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            setDialog({
+                              type: "payment",
+                              appointment,
+                              nextStatus: "PAID",
+                            })
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                        >
+                          <IndianRupee size={12} />
+                          Mark paid
+                        </button>
+                      ) : null}
+                      {paymentToggle === "PENDING" ? (
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            setDialog({
+                              type: "payment",
+                              appointment,
+                              nextStatus: "PENDING",
+                            })
+                          }
+                          className="text-xs text-gray-400 underline-offset-2 hover:text-gray-600 hover:underline disabled:opacity-50"
+                        >
+                          Mark unpaid
+                        </button>
                       ) : null}
                     </div>
                   </td>
@@ -333,6 +378,15 @@ const AppointmentsPanel = ({
       {dialog?.type === "complete" ? (
         <CompleteAppointmentModal
           appointment={dialog.appointment}
+          onClose={() => setDialog(null)}
+          onDone={afterChange}
+        />
+      ) : null}
+
+      {dialog?.type === "payment" ? (
+        <PaymentStatusModal
+          appointment={dialog.appointment}
+          nextStatus={dialog.nextStatus}
           onClose={() => setDialog(null)}
           onDone={afterChange}
         />

@@ -3,10 +3,11 @@ import { toast } from "react-hot-toast";
 
 import { useApiMutation } from "../../api/apiCall";
 import API_ENDPOINTS from "../../api/apiEndpoint";
-import { idOf, withPath } from "../../utils/ids";
+import { idOf, nameOf, withPath } from "../../utils/ids";
 import { toDateInputValue, todayInputValue } from "../../utils/datetime";
 import { CANCELLED_BY_OPTIONS } from "../../constants/appointment";
-import { Button, Modal, Select, Textarea } from "../UI/kit";
+import { formatINR } from "../dashboard/format";
+import { Button, Field, Modal, Select, Textarea } from "../UI/kit";
 import SlotPicker from "./SlotPicker";
 
 /* ------------------------------------------------------------------ */
@@ -235,6 +236,83 @@ export const CompleteAppointmentModal = ({ appointment, onClose, onDone }) => {
         placeholder="Findings, advice, follow-up plan..."
         onChange={(event) => setNotes(event.target.value)}
       />
+    </Modal>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Payment                                                             */
+/* ------------------------------------------------------------------ */
+
+/** Manual counter payment: PENDING -> PAID, or PAID -> PENDING to undo a mistake */
+export const PaymentStatusModal = ({
+  appointment,
+  nextStatus,
+  onClose,
+  onDone,
+}) => {
+  const { mutate, isPending } = useApiMutation({ method: "patch" });
+
+  const markingPaid = nextStatus === "PAID";
+  const fee = appointment?.consultationFee;
+
+  const submit = () => {
+    mutate(
+      {
+        url: withPath(API_ENDPOINTS.APPOINTMENTS.PAYMENT_STATUS, {
+          appointmentId: appointment._id,
+        }),
+        data: { paymentStatus: nextStatus },
+      },
+      {
+        onSuccess: (res) => {
+          toast.success(res?.message || "Payment updated");
+          onDone?.();
+          onClose();
+        },
+      },
+    );
+  };
+
+  return (
+    <Modal
+      open
+      size="sm"
+      title={markingPaid ? "Mark payment received" : "Undo payment"}
+      description={appointment?.appointmentNumber}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {markingPaid ? "Not yet" : "Keep paid"}
+          </Button>
+          <Button
+            variant={markingPaid ? "primary" : "danger"}
+            loading={isPending}
+            onClick={submit}
+          >
+            {markingPaid ? "Mark as paid" : "Mark unpaid"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {/* Not populated on the patient / doctor detail pages - Field shows "—" */}
+          <Field label="Patient" value={nameOf(appointment?.patientId, "")} />
+          <Field label="Doctor" value={nameOf(appointment?.doctorId, "")} />
+          <Field
+            label="Consultation fee"
+            value={fee === undefined || fee === null ? "" : formatINR(fee)}
+          />
+        </div>
+
+        <p className="text-sm text-gray-600">
+          {markingPaid
+            ? "Confirm the patient has paid this fee at the counter (cash, UPI or card)."
+            : "This appointment will go back to Payment Pending. Use this only if it was marked paid by mistake."}
+        </p>
+      </div>
     </Modal>
   );
 };
