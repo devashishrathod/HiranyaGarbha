@@ -3799,6 +3799,361 @@
       ]
     },
     {
+      "name": "Plan Videos",
+      "description": "YouTube videos by plan and trimester. Admin routes need the admin token; the feed is public and applies the patient's plan when a user token is sent. See server/docs/PLAN_VIDEOS.md.",
+      "item": [
+        {
+          "name": "createPlanVideo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Prenatal Yoga\",\n  \"description\": \"Gentle morning flow https://youtu.be/dQw4w9WgXcQ\",\n  \"videoUrl\": \"https://youtu.be/dQw4w9WgXcQ\",\n  \"packageIds\": [\n    \"<proPackageId>\"\n  ],\n  \"trimesters\": [\n    \"second\",\n    \"third\"\n  ],\n  \"subCategoryId\": null,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/create",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllPlanVideos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/getAll?page=1&limit=12&search=&packageId=&trimester=&subCategoryId=&categoryId=&isActive=&fromDate=&toDate=&sortBy=createdAt&sortOrder=desc",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "getAll"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "packageId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "trimester",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subCategoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fromDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": false
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPlanVideo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/get/<planVideoId>",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "get",
+                "<planVideoId>"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatePlanVideo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trimesters\": [\n    \"first\",\n    \"second\",\n    \"third\"\n  ],\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/update/<planVideoId>",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "update",
+                "<planVideoId>"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deletePlanVideo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/delete/<planVideoId>",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "delete",
+                "<planVideoId>"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "planVideoFeed (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/feed?page=1&limit=10&search=&trimester=&subCategoryId=&categoryId=&sortBy=createdAt&sortOrder=desc",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "trimester",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subCategoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": false
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "No token: Basic videos only."
+          },
+          "response": []
+        },
+        {
+          "name": "planVideoFeed (patient)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/feed?page=1&limit=10&search=&trimester=&subCategoryId=&categoryId=&sortBy=createdAt&sortOrder=desc",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "trimester",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subCategoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": false
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Basic videos plus what the patient's live plan covers. `access` in the response says which tier and trimesters applied."
+          },
+          "response": []
+        },
+        {
+          "name": "planVideoFeedItem (patient)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Hiranya-userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{Hiranya-baseUrl}}plan-videos/feed/<planVideoId>",
+              "host": [
+                "{{Hiranya-baseUrl}}plan-videos"
+              ],
+              "path": [
+                "feed",
+                "<planVideoId>"
+              ]
+            },
+            "description": "404 when the video is missing or not on the patient's plan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Privacy&Policy",
       "item": [
         {

@@ -332,7 +332,7 @@ All behind `verifyJwtToken`, reading `req.patientId`. **No endpoint accepts a pa
 |---|---|---|
 | `GET` | `/my` | Active package, active bonus courses, grace flag |
 | `GET` | `/my/history` | Everything ever held, paginated |
-| `GET` | `/my/entitlement` | Lightweight yes/no + tier, for gating screens |
+| `GET` | `/my/entitlement` | Lightweight yes/no + tier + the trimester the plan was bought in, for gating screens |
 | `POST` | `/preview` | Quote price and credit without writing anything |
 | `POST` | `/checkout` | Create the order, return checkout params |
 | `POST` | `/verify` | Verify the client signature, return current status |

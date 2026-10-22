@@ -81,6 +81,24 @@ module.exports = {
     third: 90,
   }),
 
+  /**
+   * Trimesters a plan video's content can belong to. "all" is not one of them:
+   * a video for the whole pregnancy lists all three. See docs/PLAN_VIDEOS.md.
+   */
+  VIDEO_TRIMESTERS: Object.freeze(["first", "second", "third"]),
+
+  /**
+   * The video trimesters a plan covers, keyed by the trimester it was bought
+   * in: that one and every one after it. A mother who joins Pro in her second
+   * trimester sees second and third trimester videos, never first.
+   */
+  TRIMESTERS_COVERED: Object.freeze({
+    all: Object.freeze(["first", "second", "third"]),
+    first: Object.freeze(["first", "second", "third"]),
+    second: Object.freeze(["second", "third"]),
+    third: Object.freeze(["third"]),
+  }),
+
   /** Lifecycle of a patient's subscription. See docs/SUBSCRIPTIONS.md §5. */
   SUBSCRIPTION_STATUS: Object.freeze({
     PENDING_PAYMENT: "PENDING_PAYMENT",

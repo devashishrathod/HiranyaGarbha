@@ -28,7 +28,7 @@ exports.getEntitlement = async (patientId) => {
     },
     endDate: { $gte: new Date() },
   })
-    .select("kind tier packageId endDate graceUntil snapshot.name")
+    .select("kind tier trimester packageId endDate graceUntil snapshot.name")
     .lean();
 
   const pkg = rows.find((row) => row.kind === SUBSCRIPTION_KIND.PACKAGE);
@@ -36,6 +36,8 @@ exports.getEntitlement = async (patientId) => {
   return {
     hasActivePlan: Boolean(pkg),
     tier: pkg?.tier || null,
+    // The trimester the plan was bought in; trimester-bound content keys off it.
+    trimester: pkg?.trimester || null,
     planName: pkg?.snapshot?.name || null,
     packageId: pkg?.packageId || null,
     endDate: pkg?.endDate || null,
