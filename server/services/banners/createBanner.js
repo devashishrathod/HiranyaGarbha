@@ -6,7 +6,8 @@ exports.createBanner = async (video, image, payload) => {
   let { name, description, subCategoryId, isActive } = payload;
   validateObjectId(subCategoryId, "SubCategory ID");
   name = name?.toLowerCase();
-  description = description?.toLowerCase();
+  // Description is kept as typed: links in it are case-sensitive, and a
+  // lowercased YouTube video ID points at a different video or none.
   const existingBanner = await Banner.findOne({ name, isDeleted: false });
   if (existingBanner) {
     throwError(400, "Banner already exist with this name");

@@ -28,8 +28,9 @@ exports.updateBanner = async (id, video, image, payload) => {
     if (exists) throwError(400, "Banner already exist with this name");
     banner.name = name;
   }
+  // Kept as typed — see createBanner.
   if (typeof description !== "undefined") {
-    banner.description = description?.toLowerCase();
+    banner.description = description;
   }
   if (typeof isActive !== "undefined") {
     banner.isActive = isActive;

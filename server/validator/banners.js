@@ -3,7 +3,7 @@ const objectId = require("./validJoiObjectId");
 
 exports.validateCreateBanner = (data) => {
   const createSchema = Joi.object({
-    name: Joi.string().min(3).max(120).required().messages({
+    name: Joi.string().min(3).max(30).required().messages({
       "string.min": "Name has minimum {#limit} characters",
       "string.max": "Name cannot exceed {#limit} characters",
     }),
@@ -20,7 +20,7 @@ exports.validateCreateBanner = (data) => {
 
 exports.validateUpdateBanner = (data) => {
   const updateSchema = Joi.object({
-    name: Joi.string().min(3).max(120).optional().messages({
+    name: Joi.string().min(3).max(30).optional().messages({
       "string.min": "Name has minimum {#limit} characters",
       "string.max": "Name cannot exceed {#limit} characters",
     }),
