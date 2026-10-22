@@ -10,6 +10,7 @@
     "seed:clinic": "node scripts/seedClinicData.js",
     "seed:prenatal": "node scripts/seedPrenatalCares.js",
     "backfill:free-basic": "node scripts/backfillFreeBasic.js",
+    "migrate:module-objects": "node scripts/migrateModuleObjects.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
