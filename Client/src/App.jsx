@@ -180,6 +180,16 @@ const GalleryDetails = lazy(() =>
     default: m.GalleryDetails,
   })),
 );
+const PlanVideosPage = lazy(() =>
+  import("./pages/gallery/PlanVideosPage").then((m) => ({
+    default: m.PlanVideosPage,
+  })),
+);
+const PlanVideoDetails = lazy(() =>
+  import("./pages/gallery/PlanVideoDetails").then((m) => ({
+    default: m.PlanVideoDetails,
+  })),
+);
 
 /* ===================== CONTACT INQUIRIES ===================== */
 const ContactInquiriesPage = lazy(() =>
@@ -319,6 +329,11 @@ const App = () => {
                   element={<SubscriptionAddEdit />}
                 />
                 <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/gallery/videos" element={<PlanVideosPage />} />
+                <Route
+                  path="/gallery/videos/:id"
+                  element={<PlanVideoDetails />}
+                />
                 <Route path="/gallery/:id" element={<GalleryDetails />} />
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/musics" element={<MusicPage />} />

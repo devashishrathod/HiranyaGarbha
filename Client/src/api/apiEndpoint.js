@@ -32,6 +32,15 @@ const API_ENDPOINTS = {
     GET_ALL: "/banners/getAll",
     GET_ONE: "/banners/get/:id",
   },
+  // Admin side of plan videos. The patient app reads /plan-videos/feed —
+  // see server/docs/PLAN_VIDEOS.md.
+  PLAN_VIDEOS: {
+    CREATE: "/plan-videos/create",
+    GET_ALL: "/plan-videos/getAll",
+    GET_ONE: "/plan-videos/get/:id",
+    UPDATE: "/plan-videos/update/:id",
+    DELETE: "/plan-videos/delete/:id",
+  },
   CONTACT_US: {
     GET_ALL: "/contact-us/getAll",
     GET_ONE: "/contact-us/get/:id",

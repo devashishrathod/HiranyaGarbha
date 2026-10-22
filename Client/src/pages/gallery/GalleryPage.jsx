@@ -9,6 +9,7 @@ import LinkifiedText from "../../components/UI/LinkifiedText";
 import Loader from "../../components/UI/Loader";
 import NotFound from "../../components/UI/NotFound";
 import Toggle from "../../components/UI/Toggle";
+import GalleryTabs from "./GalleryTabs";
 
 import {
   getApiErrorMessage,
@@ -964,6 +965,8 @@ export const GalleryPage = () => {
 
   return (
     <div className="p-4">
+      <GalleryTabs />
+
       {isNotFound ? (
         <div className="mb-4">
           <NotFound
