@@ -235,7 +235,7 @@ export const PlanVideosPage = () => {
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-lg font-semibold text-slate-800">Plan Videos</div>
+          <div className="text-lg font-semibold text-slate-800">YouTube Videos</div>
           <div className="mt-1 text-sm text-slate-600">
             YouTube videos for patients, by plan and trimester. Showing {videos.length} of{" "}
             {total}.
@@ -333,7 +333,7 @@ export const PlanVideosPage = () => {
       {!list.isLoading && !list.isError && videos.length === 0 ? (
         <EmptyState
           icon={Youtube}
-          title={hasFilters ? "No videos match these filters" : "No plan videos yet"}
+          title={hasFilters ? "No videos match these filters" : "No YouTube videos yet"}
           message={
             hasFilters
               ? "Try a different search or clear the filters."

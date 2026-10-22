@@ -16,7 +16,7 @@ exports.assertUniqueName = async (name, exceptId) => {
     .collation({ locale: "en", strength: 2 })
     .select("_id")
     .lean();
-  if (existing) throwError(400, "A plan video with this name already exists");
+  if (existing) throwError(400, "A YouTube video with this name already exists");
 };
 
 // Main packages only — bonus courses are not offered for videos. An inactive

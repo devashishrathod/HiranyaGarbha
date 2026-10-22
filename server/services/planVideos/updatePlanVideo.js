@@ -9,9 +9,9 @@ const {
 const { getPlanVideo } = require("./getPlanVideo");
 
 exports.updatePlanVideo = async (id, payload) => {
-  validateObjectId(id, "Plan video ID");
+  validateObjectId(id, "YouTube video ID");
   const video = await PlanVideo.findOne({ _id: id, isDeleted: false });
-  if (!video) throwError(404, "Plan video not found");
+  if (!video) throwError(404, "YouTube video not found");
 
   const {
     name,

@@ -51,7 +51,7 @@ export const PlanVideoDetails = () => {
           title="Video not found"
           type="gallery"
           message={error?.response?.data?.message || "It may have been deleted."}
-          actionText="Back to Plan Videos"
+          actionText="Back to YouTube Videos"
           onAction={back}
         />
       </div>
@@ -89,7 +89,7 @@ export const PlanVideoDetails = () => {
     <div className="p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-lg font-semibold text-slate-800">Plan Video Details</div>
+          <div className="text-lg font-semibold text-slate-800">YouTube Video Details</div>
           <div className="mt-1 text-sm text-slate-600">{video._id}</div>
         </div>
         <div className="flex flex-wrap gap-2">

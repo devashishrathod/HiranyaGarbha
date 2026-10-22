@@ -11,5 +11,5 @@ exports.create = asyncWrapper(async (req, res) => {
   const { error, value } = validateCreatePlanVideo(req.body);
   if (error) throwError(422, cleanJoiError(error));
   const result = await createPlanVideo(value);
-  return sendSuccess(res, 201, "Plan video created successfully", result);
+  return sendSuccess(res, 201, "YouTube video created successfully", result);
 });

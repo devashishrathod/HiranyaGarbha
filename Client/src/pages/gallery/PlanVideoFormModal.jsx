@@ -137,7 +137,7 @@ const PlanVideoFormModal = ({ video, onClose, onSaved }) => {
     <Modal
       open
       size="lg"
-      title={isEdit ? "Edit Plan Video" : "Add Plan Video"}
+      title={isEdit ? "Edit YouTube Video" : "Add YouTube Video"}
       description="Paste a YouTube link and choose which plans and trimesters get it."
       onClose={close}
       footer={
