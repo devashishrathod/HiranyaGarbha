@@ -427,7 +427,7 @@ const PackagesPage = () => {
       {selectedPackage ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-xl">
-            <div className={`sticky top-0 bg-gradient-to-r ${getTierTheme(selectedPackage).color} p-6 text-white sm:p-8`}>
+            <div className={`sticky top-0 z-30 bg-gradient-to-r ${getTierTheme(selectedPackage).color} p-6 text-white sm:p-8`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="mb-1 text-2xl font-bold sm:text-3xl">{selectedPackage.name}</h2>

@@ -39,14 +39,16 @@ export const ModuleVideo = ({ url, title }) => {
 };
 
 /*
- * Opens while the pointer is over (or focus is inside) the nearest
- * `group/module`. It hangs below its positioned parent; pt-1.5 instead of a
- * margin keeps the pointer inside the hover area on its way down to it.
+ * Opens while the pointer is over (or keyboard focus is inside) the nearest
+ * `group/module`. Keyboard focus only: a click also focuses the row, and
+ * that card would stay open next to the one under the pointer. It hangs
+ * below its positioned parent; pt-1.5 instead of a margin keeps the pointer
+ * inside the hover area on its way down to it.
  */
 const HoverCard = ({ children }) => (
   <div
     role="tooltip"
-    className="invisible absolute inset-x-0 top-full z-20 pt-1.5 opacity-0 transition-opacity group-focus-within/module:visible group-focus-within/module:opacity-100 group-hover/module:visible group-hover/module:opacity-100"
+    className="invisible absolute inset-x-0 top-full z-20 pt-1.5 opacity-0 transition-opacity group-focus-visible/module:visible group-focus-visible/module:opacity-100 group-has-[:focus-visible]/module:visible group-has-[:focus-visible]/module:opacity-100 group-hover/module:visible group-hover/module:opacity-100"
   >
     <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
       {children}
