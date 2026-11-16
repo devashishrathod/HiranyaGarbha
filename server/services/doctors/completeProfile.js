@@ -11,8 +11,9 @@ exports.completeProfile = async (userId, data, image) => {
   }
 
   if (image) {
-    if (doctor.image) await deleteImage(doctor.image)
-    doctor.image = await uploadImage(image)
+    const newImage = await uploadImage(image.tempFilePath);
+    if (doctor.image) await deleteImage(doctor.image);
+    doctor.image = newImage;
   }
 
   // Personal details merge

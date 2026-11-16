@@ -10,8 +10,9 @@ exports.completeProfile = async (userId, data, image) => {
   if (!patient) patient = new Patient({ userId });
 
   if (image) {
-    if (patient.image) await deleteImage(patient.image)
-    patient.image = await uploadImage(image)
+    const newImage = await uploadImage(image.tempFilePath);
+    if (patient.image) await deleteImage(patient.image);
+    patient.image = newImage;
   }
 
   // Merge top-level or nested personalDetails

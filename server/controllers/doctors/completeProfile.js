@@ -9,7 +9,8 @@ const { validateCompleteDoctorProfile } = require("../../validator/doctors");
 
 exports.completeProfile = asyncWrapper(async (req, res) => {
   const userId = req.query?.doctorId ?? req.userId;
-  const { error, value } = validateCompleteDoctorProfile(req.body);
+  // A photo-only request (multipart with just `image`) arrives with no body.
+  const { error, value } = validateCompleteDoctorProfile(req.body ?? {});
   if (error) throwError(422, cleanJoiError(error));
 
   const image = req.files?.image;
