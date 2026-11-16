@@ -6,6 +6,7 @@ import API_ENDPOINTS from "../../api/apiEndpoint";
 import { BLOOD_GROUPS } from "../../constants/appointment";
 import { buildQuery } from "../../utils/ids";
 import { Button, Input, Modal, Select, Textarea } from "../../components/UI/kit";
+import ImageUpload from "../../components/UI/ImageUpload";
 
 const buildInitialState = (doctor) => ({
   fullName: doctor?.fullName || "",
@@ -55,6 +56,7 @@ const DoctorFormModal = ({ doctor, onClose, onSaved }) => {
 
   const [form, setForm] = useState(() => buildInitialState(doctor));
   const [imageFile, setImageFile] = useState(null);
+  const [photoProgress, setPhotoProgress] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const { mutateAsync } = useApiMutation({ toastOnError: false });
@@ -84,6 +86,33 @@ const DoctorFormModal = ({ doctor, onClose, onSaved }) => {
     languages: toList(form.languages),
   });
 
+  /** Returns an error message, or "" once the photo is stored. */
+  const uploadPhoto = async (userId) => {
+    const body = new FormData();
+    body.append("image", imageFile);
+    setPhotoProgress(0);
+
+    try {
+      await mutateAsync({
+        method: "put",
+        url: `${API_ENDPOINTS.DOCTORS.UPDATE_PROFILE}${buildQuery({
+          doctorId: userId,
+        })}`,
+        data: body,
+        onUploadProgress: (event) => {
+          if (event.total) {
+            setPhotoProgress(Math.round((event.loaded * 100) / event.total));
+          }
+        },
+      });
+      return "";
+    } catch (error) {
+      return error?.response?.data?.message || "The photo could not be uploaded";
+    } finally {
+      setPhotoProgress(null);
+    }
+  };
+
   const submit = async () => {
     if (!form.fullName.trim()) {
       toast.error("Full name is required");
@@ -97,9 +126,10 @@ const DoctorFormModal = ({ doctor, onClose, onSaved }) => {
 
     setSaving(true);
 
+    let userId = doctor?.userId?._id || doctor?.userId;
+
     try {
       const profile = buildProfilePayload();
-      let userId = doctor?.userId?._id || doctor?.userId;
 
       if (isEdit) {
         await mutateAsync({
@@ -123,30 +153,35 @@ const DoctorFormModal = ({ doctor, onClose, onSaved }) => {
 
         userId = response?.data?.user?._id;
       }
-
-      if (imageFile && userId) {
-        const body = new FormData();
-        body.append("image", imageFile);
-
-        await mutateAsync({
-          method: "put",
-          url: `${API_ENDPOINTS.DOCTORS.UPDATE_PROFILE}${buildQuery({
-            doctorId: userId,
-          })}`,
-          data: body,
-        });
-      }
-
-      toast.success(isEdit ? "Doctor updated" : "Doctor created");
-      onSaved?.();
-      onClose();
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||
           `Could not ${isEdit ? "update" : "create"} the doctor`,
       );
-    } finally {
       setSaving(false);
+      return;
+    }
+
+    const photoError = imageFile && userId ? await uploadPhoto(userId) : "";
+    setSaving(false);
+    onSaved?.();
+
+    if (!photoError) {
+      toast.success(isEdit ? "Doctor updated" : "Doctor created");
+      onClose();
+      return;
+    }
+
+    if (isEdit) {
+      // Details are saved; keep the modal open so the photo can be retried with Save.
+      toast.error(`Details saved, but the photo was not uploaded: ${photoError}`);
+    } else {
+      // Closing avoids a second Create (and a duplicate account) on retry.
+      toast.error(
+        `Doctor created, but the photo was not uploaded: ${photoError}. Edit the doctor to add it.`,
+        { duration: 6000 },
+      );
+      onClose();
     }
   };
 
@@ -242,17 +277,16 @@ const DoctorFormModal = ({ doctor, onClose, onSaved }) => {
           onChange={set("address")}
         />
 
-        <label className="col-span-full block">
-          <span className="mb-1.5 block text-xs font-medium text-gray-600">
-            Profile photo
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(event) => setImageFile(event.target.files?.[0] || null)}
-            className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
-          />
-        </label>
+        <ImageUpload
+          label="Profile photo"
+          className="col-span-full"
+          currentUrl={doctor?.image}
+          file={imageFile}
+          onChange={setImageFile}
+          progress={photoProgress}
+          disabled={saving}
+          pendingNote={`Uploads when you click "${isEdit ? "Save changes" : "Create doctor"}"`}
+        />
 
         <SubHeading>Professional details</SubHeading>
 

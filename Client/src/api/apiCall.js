@@ -142,7 +142,7 @@ export const usePutMutation = (endpoint, options = {}) => {
  * (e.g. /appointments/:appointmentId/confirm) or that need a verb the
  * fixed-endpoint hooks above do not cover, such as PATCH.
  *
- * Call it as: mutate({ url, data, method })
+ * Call it as: mutate({ url, data, method, onUploadProgress? })
  */
 export const useApiMutation = (options = {}) => {
   const {
@@ -153,11 +153,12 @@ export const useApiMutation = (options = {}) => {
   } = options || {};
 
   return useMutation({
-    mutationFn: async ({ url, data, method } = {}) => {
+    mutationFn: async ({ url, data, method, onUploadProgress } = {}) => {
       const response = await axiosInstance.request({
         url,
         method: method || defaultMethod,
         data,
+        onUploadProgress,
       });
       return response.data;
     },
